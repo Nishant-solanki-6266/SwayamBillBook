@@ -182,11 +182,29 @@ exports.checkout = async (req, res) => {
         }
         // ---------------------------------------------------------
 
+      let customerName = 'Walk-in Customer';
+      if (customerId) {
+        const cust = await tx.customer.findUnique({
+          where: { id: parseInt(customerId, 10) },
+          select: { name: true }
+        });
+        if (cust && cust.name) customerName = cust.name;
+      }
+
       await tx.auditLog.create({
         data: {
           actionType: 'POS_CHECKOUT',
-          details: JSON.stringify({ invoiceNo: invoice.invoiceNo, totalAmount }),
-          userName: req.user.email || 'POS_USER',
+          moduleName: 'POS Billing',
+          billNumber: invoice.invoiceNo,
+          referenceId: String(invoice.id),
+          details: JSON.stringify({ 
+            documentNumber: invoice.invoiceNo, 
+            amount: Number(totalAmount || 0),
+            partyName: customerName
+          }),
+          userName: req.user.name || req.user.email || 'POS_USER',
+          userRole: req.user.role || 'User',
+          ipAddress: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : (req.ip || req.socket.remoteAddress),
           companyId,
         },
       });

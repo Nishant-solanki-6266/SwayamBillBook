@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, 
@@ -11,7 +11,11 @@ import { useAuditLog } from '../context/AuditLogContext';
 
 export function AuditLogs() {
   const navigate = useNavigate();
-  const { logs, loading } = useAuditLog();
+  const { logs, loading, fetchLogs } = useAuditLog();
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterUser, setFilterUser] = useState('');
@@ -98,11 +102,35 @@ export function AuditLogs() {
     setViewModalOpen(true);
   };
 
-  const getActionColor = (action) => {
-    if (action === 'Create') return 'text-[#28a745] bg-[#d4edda] border-[#c3e6cb]';
-    if (action === 'Edit') return 'text-[#004085] bg-[#cce5ff] border-[#b8daff]';
-    if (action === 'Delete') return 'text-[#721c24] bg-[#f8d7da] border-[#f5c6cb]';
-    return 'text-gray-800 bg-gray-200 border-gray-300';
+  const getActionColor = (actionType) => {
+    switch(actionType) {
+      case 'Create': return 'bg-[#d4edda] text-[#155724] border-[#c3e6cb]';
+      case 'Edit': return 'bg-[#fff3cd] text-[#856404] border-[#ffeeba]';
+      case 'Delete': return 'bg-[#f8d7da] text-[#721c24] border-[#f5c6cb]';
+      case 'MARK_INVOICE_PAID': return 'bg-[#cce5ff] text-[#004085] border-[#b8daff]';
+      default: return 'bg-[#e2e3e5] text-[#383d41] border-[#d6d8db]';
+    }
+  };
+
+  const handleNavigation = (log) => {
+    if (!log.referenceId) return;
+    
+    let path = `/admin/sales-invoice?id=${log.referenceId}`; // Default
+    if (log.moduleName === 'POS Billing') {
+      path = `/admin/pos?id=${log.referenceId}`;
+    } else if (log.moduleName === 'Sales Order') {
+      path = `/admin/sales-order-invoice?id=${log.referenceId}`;
+    } else if (log.moduleName === 'Quotation') {
+      path = `/admin/quotation-invoice?id=${log.referenceId}`;
+    } else if (log.moduleName === 'Sales Return') {
+      path = `/admin/sales-return-invoice?id=${log.referenceId}`;
+    } else if (log.moduleName === 'Customer Challan') {
+      path = `/admin/customer-challan-creation?id=${log.referenceId}`;
+    } else if (log.moduleName === 'Customer Invoice') {
+      path = `/admin/customer-invoice-creation?id=${log.referenceId}`;
+    }
+    
+    navigate(path);
   };
 
   return (
@@ -221,6 +249,23 @@ export function AuditLogs() {
             </div>
           )}
 
+          <div className="flex items-end mb-1">
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFilterUser('');
+                setFilterModule('');
+                setFilterAction('');
+                setDateFilter('Today');
+                setFromDate('');
+                setToDate('');
+              }}
+              className="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 px-4 py-1.5 rounded-[3px] text-[13px] font-medium transition-colors"
+            >
+              Reset Filters
+            </button>
+          </div>
+
         </div>
 
         {/* Data Table */}
@@ -234,6 +279,8 @@ export function AuditLogs() {
                 <th className="px-3 py-2 text-[13px] font-bold border-r border-gray-600 whitespace-nowrap">Action Type</th>
                 <th className="px-3 py-2 text-[13px] font-bold border-r border-gray-600 whitespace-nowrap">Module</th>
                 <th className="px-3 py-2 text-[13px] font-bold border-r border-gray-600 whitespace-nowrap">Bill/Invoice No</th>
+                <th className="px-3 py-2 text-[13px] font-bold border-r border-gray-600 whitespace-nowrap">Customer Name</th>
+                <th className="px-3 py-2 text-[13px] font-bold border-r border-gray-600 whitespace-nowrap">Amount (₹)</th>
                 <th className="px-3 py-2 text-[13px] font-bold border-r border-gray-600 whitespace-nowrap">IP Address</th>
                 <th className="px-3 py-2 text-[13px] font-bold whitespace-nowrap text-center">Details</th>
               </tr>
@@ -241,7 +288,7 @@ export function AuditLogs() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-8 text-gray-500 text-[14px]">
+                  <td colSpan="10" className="text-center py-8 text-gray-500 text-[14px]">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <div className="w-6 h-6 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin"></div>
                       <span>Loading audit logs...</span>
@@ -250,7 +297,7 @@ export function AuditLogs() {
                 </tr>
               ) : filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-8 text-gray-500 text-[14px]">
+                  <td colSpan="10" className="text-center py-8 text-gray-500 text-[14px]">
                     No audit logs found matching the selected criteria.
                   </td>
                 </tr>
@@ -266,7 +313,26 @@ export function AuditLogs() {
                       </span>
                     </td>
                     <td className="px-3 py-2 text-[13px] text-gray-800 whitespace-nowrap">{log.moduleName}</td>
-                    <td className="px-3 py-2 text-[13px] font-bold text-[#4F46E5] whitespace-nowrap">{log.billNumber || '-'}</td>
+                    <td 
+                      className={`px-3 py-2 text-[13px] font-bold whitespace-nowrap ${log.referenceId ? 'text-blue-600 cursor-pointer hover:underline' : 'text-[#4F46E5]'}`} 
+                      onClick={() => handleNavigation(log)}
+                    >
+                      {log.billNumber || '-'}
+                    </td>
+                    <td className="px-3 py-2 text-[13px] text-gray-800 whitespace-nowrap">{log.partyName || '-'}</td>
+                    <td className="px-3 py-2 text-[13px] whitespace-nowrap">
+                      {log.previousAmount !== null && log.amount !== null && log.previousAmount !== log.amount ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="line-through text-red-500 text-[12px]">₹{Number(log.previousAmount).toLocaleString('en-IN')}</span>
+                          <span className="text-gray-400">→</span>
+                          <span className="text-emerald-600 font-bold">₹{Number(log.amount).toLocaleString('en-IN')}</span>
+                        </div>
+                      ) : log.amount !== null ? (
+                        <span className="font-medium text-gray-800">₹{Number(log.amount).toLocaleString('en-IN')}</span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-[13px] text-gray-500 whitespace-nowrap">{log.ipAddress || '127.0.0.1'}</td>
                     <td className="px-3 py-2 text-[13px] whitespace-nowrap text-center">
                       <button 

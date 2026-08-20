@@ -379,8 +379,24 @@ export function ProductSelectDropdown({ products, value, selectedVariant, onChan
         isOpen={isScannerOpen} 
         onClose={() => setIsScannerOpen(false)}
         onScan={(scannedText) => {
-           setSearchTerm(scannedText);
-           setIsOpen(true);
+          const code = (scannedText || '').trim();
+          if (!code) return;
+          const found = products.find(p => 
+            String(p.barcode || '').trim().toLowerCase() === code.toLowerCase() ||
+            String(p.sku || '').trim().toLowerCase() === code.toLowerCase() ||
+            String(p.id) === code
+          );
+
+          if (found) {
+            onSelect(found.id);
+            setSearchTerm('');
+            setIsOpen(false);
+            setIsScannerOpen(false);
+          } else {
+            setSearchTerm(code);
+            setIsOpen(true);
+            setIsScannerOpen(false);
+          }
         }}
       />
     </div>

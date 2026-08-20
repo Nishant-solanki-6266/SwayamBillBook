@@ -945,15 +945,21 @@ export function SalesInvoice() {
       }
       
       // Add Audit Log (awaiting so it doesn't get cancelled on navigation)
+      const partyName = customerInput ? customerInput.split(' - ')[0] : 'Cash Sale';
+      
       await addLog({
         userName: 'Admin User', // Hardcoded for now, would come from auth context
         userRole: 'Admin',
         actionType: 'Create',
-        billNumber: payload.invoiceNo,
+        billNumber: response.data?.invoiceNo || payload.invoiceNo,
+        referenceId: response.data?.id,
         moduleName: pageTitle,
         previousData: null,
-        updatedData: payload,
-        ipAddress: '127.0.0.1' // Ideally captured in backend, passing dummy for now
+        updatedData: {
+          ...payload,
+          partyName,
+          amount: payload.totalAmount
+        }
       });
 
       setIsPaymentStatusModalOpen(false);

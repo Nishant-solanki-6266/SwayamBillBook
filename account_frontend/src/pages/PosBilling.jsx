@@ -279,23 +279,39 @@ export function PosBilling() {
     }, 100);
   };
 
-  const handleBarcodeSubmit = (e) => {
-    e.preventDefault();
+  const handleBarcodeSubmit = async (e) => {
+    if (e) e.preventDefault();
     const query = barcodeInput.trim();
     if (!query) return;
 
-    // Find product (Exact match for barcode, or prefix/startsWith match for name)
-    const exactBarcodeMatch = products.find(p => p.barcode === query);
-    const product = exactBarcodeMatch || 
-      products.find(p => p.name && p.name.toLowerCase().startsWith(query.toLowerCase())) ||
-      products.find(p => p.name && p.name.toLowerCase().includes(query.toLowerCase()));
-    
+    // 1. Exact match by barcode, SKU, or itemCode in local active products
+    let product = products.find(p => p.barcode === query || p.sku === query || (p.barcode && p.barcode.toLowerCase() === query.toLowerCase()));
+
+    // 2. If not found in local state, fetch from API endpoint
+    if (!product) {
+      try {
+        const res = await apiClient.get(`/products?barcode=${encodeURIComponent(query)}`);
+        if (res.data?.success && Array.isArray(res.data?.data) && res.data.data.length > 0) {
+          product = res.data.data[0];
+        }
+      } catch (err) {
+        console.error('Failed to query product by barcode:', err);
+      }
+    }
+
+    // 3. Fallback to name search if barcode did not return a result
+    if (!product) {
+      product = products.find(p => p.name && p.name.toLowerCase().startsWith(query.toLowerCase())) ||
+        products.find(p => p.name && p.name.toLowerCase().includes(query.toLowerCase()));
+    }
+
     if (product) {
       addToCart(product);
-      setBarcodeInput(''); // Clear for next scan
+      setBarcodeInput(''); // Clear input for next scan
       setShowProductSuggestions(false);
+      if (barcodeRef.current) barcodeRef.current.focus();
     } else {
-      alert('Product not found!');
+      alert(`Product not found for barcode: ${query}`);
     }
   };
 

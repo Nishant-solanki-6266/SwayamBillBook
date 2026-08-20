@@ -111,15 +111,27 @@ exports.getProducts = async (req, res) => {
   const limit = parseInt(req.query.limit, 10) || 100000;
   const skip = (page - 1) * limit;
   const warehouseId = req.query.warehouseId ? parseInt(req.query.warehouseId, 10) : null;
+  const barcodeQuery = req.query.barcode ? req.query.barcode.trim() : null;
   try {
+    const whereClause = {
+      companyId,
+      deletedAt: null,
+      ...(barcodeQuery && {
+        OR: [
+          { barcode: barcodeQuery },
+          { sku: barcodeQuery }
+        ]
+      })
+    };
+
     const [products, total, unitConversions, warehouseStocks] = await Promise.all([
       prisma.product.findMany({ 
-        where: { companyId, deletedAt: null }, 
+        where: whereClause, 
         include: { attributeValues: true },
         skip, 
         take: limit 
       }),
-      prisma.product.count({ where: { companyId, deletedAt: null } }),
+      prisma.product.count({ where: whereClause }),
       prisma.unitConversion.findMany({ where: { companyId } }),
       warehouseId ? prisma.warehouseStock.findMany({ where: { warehouseId, companyId } }) : []
     ]);

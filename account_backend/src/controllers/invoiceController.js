@@ -62,7 +62,7 @@ exports.createInvoice = async (req, res) => {
 
       const customer = await tx.customer.findUnique({
         where: { id: parseInt(customerId, 10) },
-        select: { id: true, companyId: true }
+        select: { id: true, companyId: true, name: true }
       });
       if (!customer || customer.companyId !== companyId) {
         throw new Error('Invalid customer for this company');
@@ -205,11 +205,22 @@ exports.createInvoice = async (req, res) => {
         }
         // -------------------------------------------------------------
 
+      // Audit Log for Create Invoice
+      const partyName = customer ? (customer.name || 'Cash Sale') : 'Cash Sale';
       await tx.auditLog.create({
         data: {
-          actionType: 'CREATE_INVOICE',
-          details: JSON.stringify({ invoiceNo: invoice.invoiceNo, totalAmount }),
-          userName: req.user.email || req.user.id,
+          actionType: 'Create',
+          moduleName: 'Sales Invoice',
+          billNumber: invoice.invoiceNo,
+          referenceId: String(invoice.id),
+          userName: req.user.name || req.user.email || 'Unknown User',
+          userRole: req.user.role || 'User',
+          ipAddress: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : (req.ip || req.socket.remoteAddress),
+          details: JSON.stringify({
+            documentNumber: invoice.invoiceNo,
+            partyName: partyName,
+            amount: Number(invoice.totalAmount || 0)
+          }),
           companyId,
         },
       });
@@ -284,9 +295,18 @@ exports.markInvoicePaid = async (req, res) => {
 
     await prisma.auditLog.create({
       data: {
-        actionType: 'MARK_INVOICE_PAID',
-        details: JSON.stringify({ invoiceNo: invoice.invoiceNo }),
-        userName: String(req.user.email || req.user.name || req.user.id),
+        actionType: 'Update',
+        moduleName: 'Sales Invoice',
+        billNumber: invoice.invoiceNo,
+        referenceId: String(invoice.id),
+        userName: String(req.user.name || req.user.email || req.user.id),
+        userRole: req.user.role || 'User',
+        ipAddress: req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : (req.ip || req.socket.remoteAddress),
+        details: JSON.stringify({
+          documentNumber: invoice.invoiceNo,
+          amount: Number(invoice.totalAmount || 0),
+          changes: 'Marked as PAID'
+        }),
         companyId,
       },
     });

@@ -151,16 +151,26 @@ export function BarcodePage() {
     }
   };
 
-  const handleAddToList = () => {
+  const handleAddToList = async () => {
     if (!selectedProduct) return alert('Please select a product');
     if (!printQty || parseInt(printQty) <= 0) return alert('Please enter a valid quantity');
 
     const prod = products.find(p => p.id.toString() === String(selectedProduct));
+    
+    if (prod && barcodeInput && prod.barcode !== barcodeInput) {
+      try {
+        await apiClient.put(`/products/${prod.id}`, { barcode: barcodeInput });
+        prod.barcode = barcodeInput;
+      } catch (err) {
+        console.error('Failed to persist barcode to backend:', err);
+      }
+    }
+
     const newItem = {
       id: Date.now(),
       productId: selectedProduct,
       name: prod?.name || 'Unknown',
-      barcode: barcodeInput,
+      barcode: barcodeInput || prod?.barcode || '',
       quantity: printQty,
       salePrice: salePriceInput,
       mrp: mrpInput,
@@ -1437,196 +1447,283 @@ export function BarcodePage() {
       </div>
 
       {/* Hidden Print Section for QR Codes */}
-      <style>
-        {`
-          @media print {
-            @page {
-              size: ${(activeTemplate?.barcodeFormat === 'Thermal Roll' || printerType === 'Thermal Roll') ? `${(parseInt(activeTemplate?.labelsInRow || labelCount) > 1 && (activeTemplate?.pageWidth || pageWidth || '50mm') === '50mm') ? '78mm' : (activeTemplate?.pageWidth || pageWidth || '50mm')} ${activeTemplate?.pageHeight || pageHeight || '25mm'}` : 'A4 portrait'};
-              margin: 0;
-            }
-            html, body, #root {
-              margin: 0 !important;
-              padding: 0 !important;
-              background-color: white !important;
-              height: auto !important;
-              min-height: 0 !important;
-            }
-            body * { visibility: hidden; }
-            #qr-print-section, #qr-print-section * { visibility: visible; }
-            #qr-print-section {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              display: ${parseInt(activeTemplate?.labelsInRow || labelCount) > 1 ? 'grid' : 'flex'};
-              ${parseInt(activeTemplate?.labelsInRow || labelCount) > 1 ? `grid-template-columns: repeat(${parseInt(activeTemplate?.labelsInRow || labelCount)}, 1fr);` : 'flex-wrap: wrap;'}
-              gap: ${activeTemplate?.heightGap || heightGap || '2mm'} ${activeTemplate?.labelGap || labelGap || '2mm'};
-              padding: ${(activeTemplate?.barcodeFormat === 'Thermal Roll' || printerType === 'Thermal Roll') ? '0' : '10mm 8mm'};
-              margin: 0;
-              box-sizing: border-box;
-            }
-            .print-item {
-              width: ${parseInt(activeTemplate?.labelsInRow || labelCount) > 1 ? '100%' : (activeTemplate?.pageWidth || pageWidth || '50mm')};
-              height: ${(activeTemplate?.barcodeFormat === 'Thermal Roll' || printerType === 'Thermal Roll') ? (activeTemplate?.pageHeight || pageHeight || '25mm') : (parseInt(activeTemplate?.labelsInRow || labelCount) > 1 ? (activeTemplate?.pageHeight || pageHeight || '45mm') : (activeTemplate?.pageHeight || pageHeight || '25mm'))};
-              overflow: hidden;
-              box-sizing: border-box;
-              margin: 0;
-              padding: 3mm 4mm;
-              border: 1.5px solid #000 !important;
-              border-radius: 4px;
-              background: white;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              ${parseInt(activeTemplate?.labelsInRow || labelCount) > 1
-            ? 'page-break-inside: avoid; break-inside: avoid; page-break-after: avoid; break-after: avoid;'
-            : (pageBreak === 'Yes' ? 'page-break-after: always; break-after: page;' : 'page-break-inside: avoid; break-inside: avoid;')}
+      {(() => {
+        const parseMmVal = (val, defaultVal = 0) => {
+          if (!val) return defaultVal;
+          const num = parseFloat(val.toString().replace(/mm/gi, '').trim());
+          return isNaN(num) ? defaultVal : num;
+        };
+
+        const isThermalMode = (activeTemplate?.barcodeFormat === 'Thermal Roll' || printerType === 'Thermal Roll');
+
+        const singleLabelWidthMm = parseMmVal(activeTemplate?.pageWidth || pageWidth, 50);
+        const labelHeightMm = parseMmVal(activeTemplate?.pageHeight || pageHeight, 25);
+        const labelsPerRow = Math.max(1, parseInt(activeTemplate?.labelsInRow || labelCount) || 1);
+        const labelGapMm = parseMmVal(activeTemplate?.labelGap || labelGap, 1);
+        const leftMarginMm = parseMmVal(activeTemplate?.leftMargin || leftMargin, 0.5);
+        const rightMarginMm = parseMmVal(activeTemplate?.rightMargin || rightMargin, 0.5);
+
+        const totalRollWidthMm = isThermalMode
+          ? ((singleLabelWidthMm * labelsPerRow) + (Math.max(0, labelsPerRow - 1) * labelGapMm) + leftMarginMm + rightMarginMm)
+          : 210;
+
+        const itemsToPrint = printRowModal
+          ? Array.from({ length: Math.max(1, parseInt(printRowQty) || 1) }).map(() => printRowModal)
+          : printList.flatMap(item => Array.from({ length: Math.max(1, parseInt(item.quantity) || 1) }).map(() => item));
+
+        const renderItemInner = (item, keyIndex) => {
+          const fullProd = products.find(p => p.id?.toString() === item.productId?.toString());
+          let tmplElements = [];
+          if (activeTemplate?.elements) {
+            try {
+              tmplElements = typeof activeTemplate.elements === 'string' ? JSON.parse(activeTemplate.elements) : activeTemplate.elements;
+            } catch (err) {
+              console.warn('Failed to parse active template elements:', err);
             }
           }
-        `}
-      </style>
-      <div id="qr-print-section" className="hidden print:flex print:flex-wrap">
-        {(() => {
-          const itemsToPrint = printRowModal
-            ? Array.from({ length: Math.max(1, parseInt(printRowQty) || 1) }).map(() => printRowModal)
-            : printList.flatMap(item => Array.from({ length: Math.max(1, parseInt(item.quantity) || 1) }).map(() => item));
 
-          return itemsToPrint.map((item, i) => {
-            const fullProd = products.find(p => p.id?.toString() === item.productId?.toString());
-            let tmplElements = [];
-            if (activeTemplate?.elements) {
-              try {
-                tmplElements = typeof activeTemplate.elements === 'string' ? JSON.parse(activeTemplate.elements) : activeTemplate.elements;
-              } catch (err) {
-                console.warn('Failed to parse active template elements:', err);
-              }
-            }
-
-            return (
-              <div key={i} className="print-item bg-white p-[2mm] border-[1.5px] border-black box-border flex items-center justify-start gap-4">
-                <div className="flex flex-col items-start justify-center pr-1 overflow-hidden" style={{ flex: '0 1 auto', minWidth: 0, maxWidth: 'calc(100% - 70px)' }}>
-                  {(activeTemplate?.showHeading !== false) && (
-                    <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] leading-none uppercase w-full truncate block">
-                      {activeTemplate?.barcodeHeading || 'SWAYAM BILL'}
+          return (
+            <div
+              key={keyIndex}
+              className="print-item bg-white p-[2mm] border-[1.5px] border-black box-border flex items-center justify-start gap-4"
+              style={{
+                width: isThermalMode ? `${singleLabelWidthMm}mm` : undefined,
+                height: `${labelHeightMm}mm`,
+                boxSizing: 'border-box'
+              }}
+            >
+              <div className="flex flex-col items-start justify-center pr-1 overflow-hidden" style={{ flex: '0 1 auto', minWidth: 0, maxWidth: 'calc(100% - 70px)' }}>
+                {(activeTemplate?.showHeading !== false) && (
+                  <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] leading-none uppercase w-full truncate block">
+                    {activeTemplate?.barcodeHeading || 'SWAYAM BILL'}
+                  </span>
+                )}
+                <span style={{ fontSize: '11px', lineHeight: '1.1' }} className="font-extrabold text-[#034694] uppercase mt-[2px] truncate block w-full">
+                  {item.name}
+                </span>
+                <div className="flex flex-col mt-[2px] w-full">
+                  {(activeTemplate?.showCategory === true) && (
+                    <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
+                      <span className="text-black font-semibold">Cat: </span>{item.category || item.categoryName || fullProd?.category || ''}
                     </span>
                   )}
-                  <span style={{ fontSize: '11px', lineHeight: '1.1' }} className="font-extrabold text-[#034694] uppercase mt-[2px] truncate block w-full">
-                    {item.name}
-                  </span>
-                  <div className="flex flex-col mt-[2px] w-full">
-                    {(activeTemplate?.showCategory === true) && (
-                      <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
-                        <span className="text-black font-semibold">Cat: </span>{item.category || item.categoryName || fullProd?.category || ''}
-                      </span>
-                    )}
-                    {(activeTemplate?.showBrand === true) && (
-                      <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
-                        <span className="text-black font-semibold">Brand: </span>{item.brand || item.brandName || fullProd?.brand || ''}
-                      </span>
-                    )}
-                    {(activeTemplate?.showSize === true) && (
-                      <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
-                        <span className="text-black font-semibold">Size: </span>{item.size || fullProd?.size || ''}
-                      </span>
-                    )}
-                    {(activeTemplate?.showColor === true) && (
-                      <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
-                        <span className="text-black font-semibold">Color: </span>{item.color || fullProd?.color || fullProd?.colour || ''}
-                      </span>
-                    )}
-                    {(activeTemplate?.showUnit === true) && (
-                      <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
-                        <span className="text-black font-semibold">Unit: </span>{item.unit || item.primaryUnit || fullProd?.baseUnit || fullProd?.salesUnit || ''}
-                      </span>
-                    )}
-                    {(activeTemplate?.showBatchNo === true) && (
-                      <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
-                        <span className="text-black font-semibold">Batch: </span>{item.batchNo || item.batch_no || fullProd?.batchNo || fullProd?.batch_no || ''}
-                      </span>
-                    )}
-                    {(activeTemplate?.showImei === true) && (
-                      <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
-                        <span className="text-black font-semibold">IMEI: </span>{item.imei || fullProd?.imei || ''}
-                      </span>
-                    )}
-                    {(activeTemplate?.showLocation === true) && (
-                      <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
-                        <span className="text-black font-semibold">Loc: </span>{item.location || item.rack || fullProd?.location || fullProd?.rack || ''}
-                      </span>
-                    )}
-                    {(activeTemplate?.showMRP !== false) && (
-                      <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
-                        <span className="text-black font-semibold">MRP: </span>{item.mrp || 0}
-                      </span>
-                    )}
-                    {(activeTemplate?.showSalePrice !== false) && (
-                      <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
-                        <span className="text-black font-semibold">Price: </span>{item.salePrice || item.price || 0}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-center justify-center" style={{ flex: '0 0 60px', width: '60px', minWidth: '60px', maxWidth: '60px' }}>
-                  {!activeTemplate?.hideBarcode && (
-                    <>
-                      {(!tmplElements || tmplElements.length === 0) ? (
-                        <QRCodeSVG
-                          value={item.barcode || item.id?.toString() || '12345'}
-                          size={55}
-                          level="M"
-                          includeMargin={true}
-                        />
-                      ) : tmplElements?.some(el => el.type === 'barcode') ? (
-                        <Barcode
-                          value={item.barcode || item.id?.toString() || '12345'}
-                          width={1}
-                          height={25}
-                          fontSize={9}
-                          margin={0}
-                          displayValue={false}
-                          background="transparent"
-                        />
-                      ) : tmplElements?.some(el => el.type === 'qrcode') ? (
-                        <QRCodeSVG
-                          value={item.barcode || item.id?.toString() || '12345'}
-                          size={55}
-                          level="M"
-                          includeMargin={true}
-                        />
-                      ) : tmplElements?.some(el => el.type === 'image') ? (
-                        <div className="w-[45px] h-[45px] border border-dashed border-gray-400 flex flex-col items-center justify-center text-[9px] text-gray-500 font-bold p-1 overflow-hidden bg-gray-100">
-                          <ImageIcon className="w-4 h-4 text-gray-400 shrink-0 mb-0.5" />
-                          <span className="truncate">Image</span>
-                        </div>
-                      ) : tmplElements?.some(el => el.type === 'circle') ? (
-                        <div className="w-[45px] h-[45px] border-[1.5px] border-black box-border rounded-full"></div>
-                      ) : tmplElements?.some(el => el.type === 'rectangle') ? (
-                        <div className="w-[45px] h-[45px] border-[1.5px] border-black box-border"></div>
-                      ) : tmplElements?.some(el => el.type === 'line') ? (
-                        <div className="w-[45px] h-[1.5px] bg-black"></div>
-                      ) : tmplElements?.some(el => el.type === 'text') ? (
-                        <span style={{ fontSize: `${tmplElements.find(el => el.type === 'text').fontSize || 12}px` }} className="font-bold text-black text-center break-words px-1">
-                          {tmplElements.find(el => el.type === 'text').field === 'Product Name' ? item.name :
-                            tmplElements.find(el => el.type === 'text').field === 'MRP' ? `${item.mrp || 0}` :
-                              tmplElements.find(el => el.type === 'text').field === 'Sale Price' ? `${item.salePrice || item.price || 0}` :
-                                tmplElements.find(el => el.type === 'text').text}
-                        </span>
-                      ) : null}
-
-                      {(!tmplElements || tmplElements.length === 0 || tmplElements.some(el => el.type === 'barcode' || el.type === 'qrcode')) && (
-                        <span style={{ fontSize: '8px' }} className="font-bold text-[#034694] mt-[2px] tracking-wide w-full text-center">
-                          {item.barcode || item.id?.toString() || '12345'}
-                        </span>
-                      )}
-                    </>
+                  {(activeTemplate?.showBrand === true) && (
+                    <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
+                      <span className="text-black font-semibold">Brand: </span>{item.brand || item.brandName || fullProd?.brand || ''}
+                    </span>
+                  )}
+                  {(activeTemplate?.showSize === true) && (
+                    <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
+                      <span className="text-black font-semibold">Size: </span>{item.size || fullProd?.size || ''}
+                    </span>
+                  )}
+                  {(activeTemplate?.showColor === true) && (
+                    <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
+                      <span className="text-black font-semibold">Color: </span>{item.color || fullProd?.color || fullProd?.colour || ''}
+                    </span>
+                  )}
+                  {(activeTemplate?.showUnit === true) && (
+                    <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
+                      <span className="text-black font-semibold">Unit: </span>{item.unit || item.primaryUnit || fullProd?.baseUnit || fullProd?.salesUnit || ''}
+                    </span>
+                  )}
+                  {(activeTemplate?.showBatchNo === true) && (
+                    <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
+                      <span className="text-black font-semibold">Batch: </span>{item.batchNo || item.batch_no || fullProd?.batchNo || fullProd?.batch_no || ''}
+                    </span>
+                  )}
+                  {(activeTemplate?.showImei === true) && (
+                    <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
+                      <span className="text-black font-semibold">IMEI: </span>{item.imei || fullProd?.imei || ''}
+                    </span>
+                  )}
+                  {(activeTemplate?.showLocation === true) && (
+                    <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
+                      <span className="text-black font-semibold">Loc: </span>{item.location || item.rack || fullProd?.location || fullProd?.rack || ''}
+                    </span>
+                  )}
+                  {(activeTemplate?.showMRP !== false) && (
+                    <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
+                      <span className="text-black font-semibold">MRP: </span>{item.mrp || 0}
+                    </span>
+                  )}
+                  {(activeTemplate?.showSalePrice !== false) && (
+                    <span style={{ fontSize: '9px' }} className="font-bold text-[#034694] w-full break-words line-clamp-1 overflow-hidden">
+                      <span className="text-black font-semibold">Price: </span>{item.salePrice || item.price || 0}
+                    </span>
                   )}
                 </div>
               </div>
-            );
-          });
-        })()}
-      </div>
+
+              <div className="flex flex-col items-center justify-center" style={{ flex: '0 0 68px', width: '68px', minWidth: '68px', maxWidth: '68px' }}>
+                {!activeTemplate?.hideBarcode && (
+                  <>
+                    {(!tmplElements || tmplElements.length === 0) ? (
+                      <QRCodeSVG
+                        value={String(item.barcode || item.id || '12345').trim()}
+                        size={68}
+                        level="H"
+                        fgColor="#000000"
+                        bgColor="#ffffff"
+                        includeMargin={false}
+                      />
+                    ) : tmplElements?.some(el => el.type === 'barcode') ? (
+                      <Barcode
+                        value={String(item.barcode || item.id || '12345').trim()}
+                        width={1.2}
+                        height={28}
+                        fontSize={9}
+                        margin={0}
+                        displayValue={false}
+                        background="transparent"
+                      />
+                    ) : tmplElements?.some(el => el.type === 'qrcode') ? (
+                      <QRCodeSVG
+                        value={String(item.barcode || item.id || '12345').trim()}
+                        size={68}
+                        level="H"
+                        fgColor="#000000"
+                        bgColor="#ffffff"
+                        includeMargin={false}
+                      />
+                    ) : tmplElements?.some(el => el.type === 'image') ? (
+                      <div className="w-[45px] h-[45px] border border-dashed border-gray-400 flex flex-col items-center justify-center text-[9px] text-gray-500 font-bold p-1 overflow-hidden bg-gray-100">
+                        <ImageIcon className="w-4 h-4 text-gray-400 shrink-0 mb-0.5" />
+                        <span className="truncate">Image</span>
+                      </div>
+                    ) : tmplElements?.some(el => el.type === 'circle') ? (
+                      <div className="w-[45px] h-[45px] border-[1.5px] border-black box-border rounded-full"></div>
+                    ) : tmplElements?.some(el => el.type === 'rectangle') ? (
+                      <div className="w-[45px] h-[45px] border-[1.5px] border-black box-border"></div>
+                    ) : tmplElements?.some(el => el.type === 'line') ? (
+                      <div className="w-[45px] h-[1.5px] bg-black"></div>
+                    ) : tmplElements?.some(el => el.type === 'text') ? (
+                      <span style={{ fontSize: `${tmplElements.find(el => el.type === 'text').fontSize || 12}px` }} className="font-bold text-black text-center break-words px-1">
+                        {tmplElements.find(el => el.type === 'text').field === 'Product Name' ? item.name :
+                          tmplElements.find(el => el.type === 'text').field === 'MRP' ? `${item.mrp || 0}` :
+                            tmplElements.find(el => el.type === 'text').field === 'Sale Price' ? `${item.salePrice || item.price || 0}` :
+                              tmplElements.find(el => el.type === 'text').text}
+                      </span>
+                    ) : null}
+
+                    {(!tmplElements || tmplElements.length === 0 || tmplElements.some(el => el.type === 'barcode' || el.type === 'qrcode')) && (
+                      <span style={{ fontSize: '8px' }} className="font-bold text-[#034694] mt-[2px] tracking-wide w-full text-center">
+                        {item.barcode || item.id?.toString() || '12345'}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        return (
+          <>
+            <style>
+              {`
+                @media print {
+                  @page {
+                    size: ${isThermalMode ? `${totalRollWidthMm}mm ${labelHeightMm}mm` : 'A4 portrait'};
+                    margin: 0 !important;
+                  }
+                  html, body, #root {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    ${isThermalMode ? `width: ${totalRollWidthMm}mm !important;` : ''}
+                    background-color: white !important;
+                    height: auto !important;
+                    min-height: 0 !important;
+                  }
+                  nav, aside, header, .no-print, button {
+                    display: none !important;
+                  }
+                  body * { visibility: hidden; }
+                  #qr-print-section, #qr-print-section * { visibility: visible; }
+                  #qr-print-section {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: ${isThermalMode ? `${totalRollWidthMm}mm` : '100%'};
+                    display: ${isThermalMode ? 'block' : (labelsPerRow > 1 ? 'grid' : 'flex')};
+                    ${!isThermalMode && labelsPerRow > 1 ? `grid-template-columns: repeat(${labelsPerRow}, 1fr);` : ''}
+                    ${!isThermalMode ? `gap: ${activeTemplate?.heightGap || heightGap || '2mm'} ${activeTemplate?.labelGap || labelGap || '2mm'};` : ''}
+                    padding: ${isThermalMode ? '0' : '10mm 8mm'};
+                    margin: 0;
+                    box-sizing: border-box;
+                  }
+                  .barcode-row {
+                    width: ${totalRollWidthMm}mm;
+                    height: ${labelHeightMm}mm;
+                    display: flex;
+                    flex-direction: row;
+                    gap: ${labelGapMm}mm;
+                    padding-left: ${leftMarginMm}mm;
+                    padding-right: ${rightMarginMm}mm;
+                    page-break-after: always;
+                    break-after: page;
+                    box-sizing: border-box;
+                    align-items: center;
+                    overflow: hidden;
+                  }
+                  .print-item {
+                    width: ${isThermalMode ? `${singleLabelWidthMm}mm` : (labelsPerRow > 1 ? '100%' : `${singleLabelWidthMm}mm`)};
+                    height: ${labelHeightMm}mm;
+                    overflow: hidden;
+                    box-sizing: border-box;
+                    margin: 0;
+                    padding: 2mm 3mm;
+                    border: 1.5px solid #000 !important;
+                    border-radius: 4px;
+                    background: white;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    ${!isThermalMode ? (labelsPerRow > 1
+                      ? 'page-break-inside: avoid; break-inside: avoid; page-break-after: avoid; break-after: avoid;'
+                      : (pageBreak === 'Yes' ? 'page-break-after: always; break-after: page;' : 'page-break-inside: avoid; break-inside: avoid;')) : ''}
+                  }
+                }
+              `}
+            </style>
+            <div id="qr-print-section" className="hidden print:block">
+              {(() => {
+                if (isThermalMode) {
+                  const rowChunks = [];
+                  for (let i = 0; i < itemsToPrint.length; i += labelsPerRow) {
+                    rowChunks.push(itemsToPrint.slice(i, i + labelsPerRow));
+                  }
+
+                  return rowChunks.map((chunk, rowIdx) => (
+                    <div
+                      key={`row-${rowIdx}`}
+                      className="barcode-row"
+                      style={{
+                        width: `${totalRollWidthMm}mm`,
+                        height: `${labelHeightMm}mm`,
+                        display: 'flex',
+                        flexDirection: 'row',
+                        gap: `${labelGapMm}mm`,
+                        paddingLeft: `${leftMarginMm}mm`,
+                        paddingRight: `${rightMarginMm}mm`,
+                        pageBreakAfter: 'always',
+                        breakAfter: 'page',
+                        boxSizing: 'border-box',
+                        alignItems: 'center',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {chunk.map((item, colIdx) => renderItemInner(item, `r${rowIdx}-c${colIdx}`))}
+                    </div>
+                  ));
+                } else {
+                  return itemsToPrint.map((item, i) => renderItemInner(item, i));
+                }
+              })()}
+            </div>
+          </>
+        );
+      })()}
 
     </div>
   );
