@@ -1313,7 +1313,7 @@ export function SalesInvoice() {
                   case 'product': return (
                     <div key={colId} {...dragProps} className={dragProps.className.replace('justify-center', 'justify-center min-w-0 relative')}>
                       <div className="flex items-center justify-center gap-2 w-full px-1 pointer-events-none">
-                        <span className="truncate">PRODUCT NAME</span>
+                        <span className="whitespace-normal break-words">PRODUCT NAME</span>
                         <div 
                           onClick={(e) => { e.stopPropagation(); handleToggleSearchMode(); }}
                           className="bg-[#007bff] hover:bg-[#0069d9] text-white px-1.5 py-0.5 rounded-[3px] flex items-center gap-1 text-[10px] font-bold transition-colors cursor-pointer shadow-sm flex-shrink-0 select-none pointer-events-auto"
@@ -1429,7 +1429,7 @@ export function SalesInvoice() {
                             searchMode={productSearchMode}
                           />
                         </div>
-                        {row.description && <div className="text-[11px] text-gray-700 ml-1 mt-0.5 whitespace-nowrap leading-none">{row.description}</div>}
+                        {row.description && <div className="text-[11px] text-gray-700 ml-1 mt-0.5 whitespace-normal break-words leading-none">{row.description}</div>}
                       </div>
                     );
                     case 'batch': return (
@@ -1794,7 +1794,7 @@ export function SalesInvoice() {
                      <span className="text-[13px] text-amber-800 font-bold">{customerPoints} pts</span>
                    </div>
                    <div className="flex items-center gap-1">
-                     <span className="text-[11px] font-bold text-gray-600 whitespace-nowrap">Redeem:</span>
+                     <span className="text-[11px] font-bold text-gray-600 whitespace-normal break-words">Redeem:</span>
                      <input
                        type="number"
                        value={redeemedPoints || ''}

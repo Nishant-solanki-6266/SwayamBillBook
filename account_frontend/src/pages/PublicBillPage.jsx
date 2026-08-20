@@ -70,178 +70,178 @@ export function PublicBillPage() {
   // Default to Income Transaction for sales
   let transactionType2 = 'Income Transaction';
   if ((invoiceNo.startsWith('PO') && !invoiceNo.startsWith('POS')) || invoiceNo.startsWith('PI')) {
-      transactionType2 = 'Expense Transaction';
+    transactionType2 = 'Expense Transaction';
   }
 
   const currentConfig = allPrintSettings?.[transactionType2] || {};
-  
+
   // Default settings if not configured
   const headerSettings = currentConfig.headerSettings || {
-      showLogo: true, showMobileNumber: true, showEmail: true, showQrCode: true,
-      labelGstin: 'GSTIN', labelInvoiceNumber: 'Invoice Number', labelDate: 'Date',
-      labelCustomer: 'Customer', labelAddress: 'Address', labelPartyContact: 'Contact Number',
-      labelPartyPan: 'Pan Number', labelPartyGstin: 'GSTIN',
-      partyContactNumber: true, partyPanNumber: true, partyGstin: true,
-      customFields: [], showMrp: true, showPrimaryQty: true, showSecondaryQty: true,
-      showDiscount1: true, showDiscount2: true, showDiscount: true, showUnit: true,
-      showCompanyProductCode: true, showBatchNo: true, showHsn: true, showPurchasePrice: true
+    showLogo: true, showMobileNumber: true, showEmail: true, showQrCode: true,
+    labelGstin: 'GSTIN', labelInvoiceNumber: 'Invoice Number', labelDate: 'Date',
+    labelCustomer: 'Customer', labelAddress: 'Address', labelPartyContact: 'Contact Number',
+    labelPartyPan: 'Pan Number', labelPartyGstin: 'GSTIN',
+    partyContactNumber: true, partyPanNumber: true, partyGstin: true,
+    customFields: [], showMrp: true, showPrimaryQty: true, showSecondaryQty: true,
+    showDiscount1: true, showDiscount2: true, showDiscount: true, showUnit: true,
+    showCompanyProductCode: true, showBatchNo: true, showHsn: true, showPurchasePrice: true
   };
-  
+
   const tableSettings = currentConfig.tableSettings || {
-      thItemName: '', thHsnSac: '', showThHsnSac: true, thGst: '', showThGst: true,
-      thQty: '', showThQty: true, thRate: '', showThRate: true, thDiscount: '', showThDiscount: true,
-      thTaxableValue: '', showThTaxableValue: true, thTotalAmount: '', showThTotalAmount: true,
-      tlIgst: '', showTlIgst: true, tlCgst: '', showTlCgst: true, tlSgst: '', showTlSgst: true,
-      tlCess: '', showTlCess: true, tlTcs: '', showTlTcs: true, tlRoundOff: '', showTlRoundOff: true
+    thItemName: '', thHsnSac: '', showThHsnSac: true, thGst: '', showThGst: true,
+    thQty: '', showThQty: true, thRate: '', showThRate: true, thDiscount: '', showThDiscount: true,
+    thTaxableValue: '', showThTaxableValue: true, thTotalAmount: '', showThTotalAmount: true,
+    tlIgst: '', showTlIgst: true, tlCgst: '', showTlCgst: true, tlSgst: '', showTlSgst: true,
+    tlCess: '', showTlCess: true, tlTcs: '', showTlTcs: true, tlRoundOff: '', showTlRoundOff: true
   };
-  
+
   const footerSettings = currentConfig.footerSettings || {
-      showQrCode: true, showHsnSummary: false, showCurrentOutstanding: false,
-      outstandingPosition: 'After this Transaction', showPaymentDetails: true,
-      labelTermsAndConditions: 'Terms And Conditions', labelThankYouNote: 'Thank You Note'
+    showQrCode: true, showHsnSummary: false, showCurrentOutstanding: false,
+    outstandingPosition: 'After this Transaction', showPaymentDetails: true,
+    labelTermsAndConditions: 'Terms And Conditions', labelThankYouNote: 'Thank You Note'
   };
-  
+
   const customization = currentConfig.customization || {
-      headerCompanyNameB: true, headerCompanyNameU: true, headerCompanyNameFontSize: '24',
-      headerCompanyAddressFontSize: '13', headerLabelsFontSize: '11', headerContentsFontSize: '11',
-      tableHeadingsFontSize: '11', tableContentsFontSize: '11', tableFooterFontSize: '11',
-      pageMargin: '0', primaryColor: '#4d1685'
+    headerCompanyNameB: true, headerCompanyNameU: true, headerCompanyNameFontSize: '24',
+    headerCompanyAddressFontSize: '13', headerLabelsFontSize: '11', headerContentsFontSize: '11',
+    tableHeadingsFontSize: '11', tableContentsFontSize: '11', tableFooterFontSize: '11',
+    pageMargin: '0', primaryColor: '#4d1685'
   };
 
   const company = invoice.company || {};
   const customer = invoice.customer || {};
   const items = invoice.items || [];
-  
+
   const invoiceDate = invoice.date
     ? new Date(invoice.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
     : '-';
 
   // Map to previewInvoice format expected by Template1
   const mappedPreviewInvoice = {
-      companyName: company.name || '',
-      companyAddress: company.address || '',
-      companyPhone: company.phone || company.mobile || '',
-      companyEmail: company.email || '',
-      companyGst: company.gstin || company.gst || '',
-      companyLogo: company.logoUrl || company.logo || '',
-      
-      customerName: customer.name || '',
-      customerAddress: customer.address || '',
-      customerPhone: customer.phone || customer.mobile || '',
-      customerEmail: customer.email || '',
-      customerGst: customer.gstin || customer.gst || '',
-      customerPan: customer.pan || '',
-      
-      shippingName: invoice.shippingName || customer.name || '',
-      shippingAddress: invoice.shippingAddress || customer.address || '',
-      shippingPhone: invoice.shippingPhone || customer.phone || customer.mobile || '',
-      shippingGst: invoice.shippingGst || customer.gstin || customer.gst || '',
-      
-      invoiceNumber: invoice.invoiceNo || '',
-      invoiceDate: invoiceDate,
-      deliveryChallanNo: invoice.deliveryChallanNo || '',
-      deliveryDate: invoice.deliveryDate ? new Date(invoice.deliveryDate).toLocaleDateString() : '',
-      
-      ackNo: invoice.ackNo || '',
-      ackDate: invoice.ackDate || '',
-      irn: invoice.irn || '',
-      
-      transportName: invoice.transportName || '',
-      documentNo: invoice.documentNo || '',
-      documentDate: invoice.documentDate || '',
-      
-      poNo: invoice.poNo || '',
-      poDate: invoice.poDate || '',
-      
-      ewayBillNo: invoice.ewayBillNo || '',
-      ewayBillDate: invoice.ewayBillDate || '',
-      vehicleNo: invoice.vehicleNo || '',
-      
-      customField1: invoice.customField1 || '',
-      customField2: invoice.customField2 || '',
-      customField3: invoice.customField3 || '',
-      
-      totalInWords: invoice.totalInWords || '',
-      paymentDetails: invoice.paymentDetails || '',
-      terms: invoice.termsAndConditions || '',
-      notes: invoice.notes || '',
-      signatureUrl: company.signatureUrl || company.signature || '',
-      
-      bankDetails: {
-          bankName: allPrintSettings?.bankDetails?.bankName || company.bankName || '',
-          ifscCode: allPrintSettings?.bankDetails?.ifscCode || company.ifscCode || '',
-          accountNumber: allPrintSettings?.bankDetails?.accountNumber || company.accountNumber || '',
-          branchName: allPrintSettings?.bankDetails?.branchName || company.branchName || '',
-          accountName: allPrintSettings?.bankDetails?.bankAccountName || company.accountName || ''
-      },
-      upiId: allPrintSettings?.bankDetails?.upiId || company.upiId || '',
-      
-      totalIgst: invoice.totalIgst || 0,
-      totalGstAmount: invoice.totalGstAmount || 0,
-      roundOff: invoice.roundOff || 0
+    companyName: company.name || '',
+    companyAddress: company.address || '',
+    companyPhone: company.phone || company.mobile || '',
+    companyEmail: company.email || '',
+    companyGst: company.gstin || company.gst || '',
+    companyLogo: company.logoUrl || company.logo || '',
+
+    customerName: customer.name || '',
+    customerAddress: customer.address || '',
+    customerPhone: customer.phone || customer.mobile || '',
+    customerEmail: customer.email || '',
+    customerGst: customer.gstin || customer.gst || '',
+    customerPan: customer.pan || '',
+
+    shippingName: invoice.shippingName || customer.name || '',
+    shippingAddress: invoice.shippingAddress || customer.address || '',
+    shippingPhone: invoice.shippingPhone || customer.phone || customer.mobile || '',
+    shippingGst: invoice.shippingGst || customer.gstin || customer.gst || '',
+
+    invoiceNumber: invoice.invoiceNo || '',
+    invoiceDate: invoiceDate,
+    deliveryChallanNo: invoice.deliveryChallanNo || '',
+    deliveryDate: invoice.deliveryDate ? new Date(invoice.deliveryDate).toLocaleDateString() : '',
+
+    ackNo: invoice.ackNo || '',
+    ackDate: invoice.ackDate || '',
+    irn: invoice.irn || '',
+
+    transportName: invoice.transportName || '',
+    documentNo: invoice.documentNo || '',
+    documentDate: invoice.documentDate || '',
+
+    poNo: invoice.poNo || '',
+    poDate: invoice.poDate || '',
+
+    ewayBillNo: invoice.ewayBillNo || '',
+    ewayBillDate: invoice.ewayBillDate || '',
+    vehicleNo: invoice.vehicleNo || '',
+
+    customField1: invoice.customField1 || '',
+    customField2: invoice.customField2 || '',
+    customField3: invoice.customField3 || '',
+
+    totalInWords: invoice.totalInWords || '',
+    paymentDetails: invoice.paymentDetails || '',
+    terms: invoice.termsAndConditions || '',
+    notes: invoice.notes || '',
+    signatureUrl: company.signatureUrl || company.signature || '',
+
+    bankDetails: {
+      bankName: allPrintSettings?.bankDetails?.bankName || company.bankName || '',
+      ifscCode: allPrintSettings?.bankDetails?.ifscCode || company.ifscCode || '',
+      accountNumber: allPrintSettings?.bankDetails?.accountNumber || company.accountNumber || '',
+      branchName: allPrintSettings?.bankDetails?.branchName || company.branchName || '',
+      accountName: allPrintSettings?.bankDetails?.bankAccountName || company.accountName || ''
+    },
+    upiId: allPrintSettings?.bankDetails?.upiId || company.upiId || '',
+
+    totalIgst: invoice.totalIgst || 0,
+    totalGstAmount: invoice.totalGstAmount || 0,
+    roundOff: invoice.roundOff || 0
   };
 
   const parsedItems = items.map(i => ({
-      name: (i.product?.name || i.name || 'Unknown') + (i.description ? ` - ${i.description}` : ''),
-      productCode: i.productCode || i.product?.code || i.product?.sku || i.product?.barcode || '-',
-      batchNo: i.batchNo || i.product?.batchNo || '-',
-      quantity: i.quantity || 1,
-      freeQty: i.freeQty || 0,
-      price: i.price || 0,
-      purchasePrice: i.purchasePrice || i.product?.purchasePrice || 0,
-      mrp: i.mrp || i.product?.mrp || 0,
-      pcs: i.quantity || 1,
-      secQty: i.secOpeningQty || i.secQty || '-',
-      priQty: i.primaryOpeningQty || i.priQty || i.quantity || '-',
-      unit: i.unit || i.sUnit || i.pUnit || i.product?.baseUnit || '-',
-      size: i.size || i.product?.size || '-',
-      pcsRate: i.price || 0,
-      discount: i.discount1 || i.disc1 || 0,
-      discount2: i.discount2 || i.disc2 || 0,
-      totalDiscount: (i.discount1 || i.disc1 || 0) + (i.discount2 || i.disc2 || 0),
-      hsn: i.hsnCode || i.product?.hsnCode || '-',
-      taxableValue: i.amount || 0,
-      total: i.total || i.amount || 0,
-      taxPercent: i.taxRate || i.gstRate || i.product?.tax || 0
+    name: (i.product?.name || i.name || 'Unknown') + (i.description ? ` - ${i.description}` : ''),
+    productCode: i.productCode || i.product?.code || i.product?.sku || i.product?.barcode || '-',
+    batchNo: i.batchNo || i.product?.batchNo || '-',
+    quantity: i.quantity || 1,
+    freeQty: i.freeQty || 0,
+    price: i.price || 0,
+    purchasePrice: i.purchasePrice || i.product?.purchasePrice || 0,
+    mrp: i.mrp || i.product?.mrp || 0,
+    pcs: i.quantity || 1,
+    secQty: i.secOpeningQty || i.secQty || '-',
+    priQty: i.primaryOpeningQty || i.priQty || i.quantity || '-',
+    unit: i.unit || i.sUnit || i.pUnit || i.product?.baseUnit || '-',
+    size: i.size || i.product?.size || '-',
+    pcsRate: i.price || 0,
+    discount: i.discount1 || i.disc1 || 0,
+    discount2: i.discount2 || i.disc2 || 0,
+    totalDiscount: (i.discount1 || i.disc1 || 0) + (i.discount2 || i.disc2 || 0),
+    hsn: i.hsnCode || i.product?.hsnCode || '-',
+    taxableValue: i.amount || 0,
+    total: i.total || i.amount || 0,
+    taxPercent: i.taxRate || i.gstRate || i.product?.tax || 0
   }));
 
   let totalQty = 0;
   let totalTaxable = 0;
   let totalFinal = 0;
   parsedItems.forEach(i => {
-      totalQty += Number(i.quantity);
-      totalTaxable += Number(i.taxableValue);
-      totalFinal += Number(i.total);
+    totalQty += Number(i.quantity);
+    totalTaxable += Number(i.taxableValue);
+    totalFinal += Number(i.total);
   });
-  
+
   // Apply document level discount if any
   if (invoice.totalDiscount) {
-     totalFinal -= Number(invoice.totalDiscount);
+    totalFinal -= Number(invoice.totalDiscount);
   }
 
-  const qrCodeUrl = allPrintSettings?.bankDetails?.upiId ? 
-      `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${allPrintSettings.bankDetails.upiId}&pn=${encodeURIComponent(allPrintSettings.bankDetails.bankAccountName || company.name || '')}&am=${totalFinal}` : 
-      '';
+  const qrCodeUrl = allPrintSettings?.bankDetails?.upiId ?
+    `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${allPrintSettings.bankDetails.upiId}&pn=${encodeURIComponent(allPrintSettings.bankDetails.bankAccountName || company.name || '')}&am=${totalFinal}` :
+    '';
 
   const fullPreviewInvoice = {
-      ...invoice,
-      ...mappedPreviewInvoice,
-      bankName: mappedPreviewInvoice.bankDetails?.bankName,
-      bankIfsc: mappedPreviewInvoice.bankDetails?.ifscCode,
-      bankAccountNo: mappedPreviewInvoice.bankDetails?.accountNumber,
-      bankBranch: mappedPreviewInvoice.bankDetails?.branchName,
-      bankAccountName: mappedPreviewInvoice.bankDetails?.accountName,
-      customer: invoice.customer || {},
-      company: invoice.company || {},
-      items: invoice.items || [],
-      paymentMode: invoice.paymentDetails || invoice.paymentMode,
-      terms: invoice.termsAndConditions || invoice.terms,
+    ...invoice,
+    ...mappedPreviewInvoice,
+    bankName: mappedPreviewInvoice.bankDetails?.bankName,
+    bankIfsc: mappedPreviewInvoice.bankDetails?.ifscCode,
+    bankAccountNo: mappedPreviewInvoice.bankDetails?.accountNumber,
+    bankBranch: mappedPreviewInvoice.bankDetails?.branchName,
+    bankAccountName: mappedPreviewInvoice.bankDetails?.accountName,
+    customer: invoice.customer || {},
+    company: invoice.company || {},
+    items: invoice.items || [],
+    paymentMode: invoice.paymentDetails || invoice.paymentMode,
+    terms: invoice.termsAndConditions || invoice.terms,
   };
 
   const isThermal = currentConfig.pdfFormat === 'Thermal Print';
   const pageSize = currentConfig.pageSize || '3inch';
-  const containerMaxWidth = isThermal 
-    ? (pageSize === '2inch' ? '58mm' : pageSize === '3inch' ? '80mm' : '102mm') 
+  const containerMaxWidth = isThermal
+    ? (pageSize === '2inch' ? '58mm' : pageSize === '3inch' ? '80mm' : '102mm')
     : '210mm';
 
   return (
@@ -261,52 +261,52 @@ export function PublicBillPage() {
           @page { margin: 0; }
         }
       `}</style>
-      
+
       <div className="no-print w-full max-w-[210mm] mb-4 flex justify-between items-center px-4">
-          <h2 className="text-xl font-bold text-gray-800">Invoice Preview</h2>
-          <button 
-            onClick={() => window.print()}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors"
-          >
-            <Printer className="w-5 h-5" />
-            Print Document
-          </button>
+        <h2 className="text-xl font-bold text-gray-800">Invoice Preview</h2>
+        <button
+          onClick={() => window.print()}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors"
+        >
+          <Printer className="w-5 h-5" />
+          Print Document
+        </button>
       </div>
 
       <div ref={printRef} className="print-container bg-white shadow-xl w-full mx-auto" style={{ padding: customization.pageMargin + 'px', maxWidth: containerMaxWidth }}>
-         {isThermal ? (
-             <ThermalTemplate 
-                previewInvoice={fullPreviewInvoice}
-                parsedItems={parsedItems}
-                totalQty={totalQty}
-                totalTaxable={totalTaxable}
-                totalFinal={totalFinal}
-                qrCodeUrl={qrCodeUrl}
-                allPrintSettings={allPrintSettings}
-                headerSettings={headerSettings}
-                tableSettings={tableSettings}
-                footerSettings={footerSettings}
-                customization={customization}
-                transactionType={currentConfig.pdfFormat || "Thermal Print"}
-                transactionType2={transactionType2}
-             />
-         ) : (
-             <Template1 
-                previewInvoice={fullPreviewInvoice}
-                parsedItems={parsedItems}
-                totalQty={totalQty}
-                totalTaxable={totalTaxable}
-                totalFinal={totalFinal}
-                qrCodeUrl={qrCodeUrl}
-                allPrintSettings={allPrintSettings}
-                headerSettings={headerSettings}
-                tableSettings={tableSettings}
-                footerSettings={footerSettings}
-                customization={customization}
-                transactionType={currentConfig.pdfFormat || "General Template"}
-                transactionType2={transactionType2}
-             />
-         )}
+        {isThermal ? (
+          <ThermalTemplate
+            previewInvoice={fullPreviewInvoice}
+            parsedItems={parsedItems}
+            totalQty={totalQty}
+            totalTaxable={totalTaxable}
+            totalFinal={totalFinal}
+            qrCodeUrl={qrCodeUrl}
+            allPrintSettings={allPrintSettings}
+            headerSettings={headerSettings}
+            tableSettings={tableSettings}
+            footerSettings={footerSettings}
+            customization={customization}
+            transactionType={currentConfig.pdfFormat || "Thermal Print"}
+            transactionType2={transactionType2}
+          />
+        ) : (
+          <Template1
+            previewInvoice={fullPreviewInvoice}
+            parsedItems={parsedItems}
+            totalQty={totalQty}
+            totalTaxable={totalTaxable}
+            totalFinal={totalFinal}
+            qrCodeUrl={qrCodeUrl}
+            allPrintSettings={allPrintSettings}
+            headerSettings={headerSettings}
+            tableSettings={tableSettings}
+            footerSettings={footerSettings}
+            customization={customization}
+            transactionType={currentConfig.pdfFormat || "General Template"}
+            transactionType2={transactionType2}
+          />
+        )}
       </div>
     </div>
   );

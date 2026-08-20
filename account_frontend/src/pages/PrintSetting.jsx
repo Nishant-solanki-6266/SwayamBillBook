@@ -5,6 +5,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import apiClient from '../api/apiClient';
 import { Template1 } from './PrintTemplates';
+
 export function PrintSetting() {
     const [pageSize, setPageSize] = useState('2inch');
     const [transactionType, setTransactionType] = useState('General Template');
@@ -357,7 +358,7 @@ export function PrintSetting() {
     const getFormatStyles = () => {
         switch (pdfFormat) {
             case 'A4': return { width: '210mm', minHeight: '297mm' };
-            case 'A5': return { width: '210mm', minHeight: '297mm' };
+            case 'A5': return { width: '148mm', maxWidth: '148mm', minHeight: '205mm', maxHeight: '210mm', margin: '0 auto', boxSizing: 'border-box', overflow: 'hidden' };
             case 'Landscape A4': return { width: '297mm', minHeight: '210mm' };
             case 'Landscape A5': return { width: '210mm', minHeight: '148mm' };
             case 'Letter Head': return { width: '210mm', minHeight: '297mm', paddingTop: '45mm' };
@@ -421,8 +422,8 @@ export function PrintSetting() {
                             <button
                                 onClick={() => setPageSize('2inch')}
                                 className={`px-5 py-1.5 rounded-[4px] text-[13px] font-medium transition-colors ${pageSize === '2inch'
-                                        ? 'border border-indigo-200 text-[#4F46E5] bg-[#ffffff]'
-                                        : 'bg-[#e9ecef] text-gray-600 border border-transparent'
+                                    ? 'border border-indigo-200 text-[#4F46E5] bg-[#ffffff]'
+                                    : 'bg-[#e9ecef] text-gray-600 border border-transparent'
                                     }`}
                             >
                                 2 inch
@@ -430,8 +431,8 @@ export function PrintSetting() {
                             <button
                                 onClick={() => setPageSize('3inch')}
                                 className={`px-5 py-1.5 rounded-[4px] text-[13px] font-medium transition-colors ${pageSize === '3inch'
-                                        ? 'border border-indigo-200 text-[#4F46E5] bg-[#ffffff]'
-                                        : 'bg-[#e9ecef] text-gray-600 border border-transparent'
+                                    ? 'border border-indigo-200 text-[#4F46E5] bg-[#ffffff]'
+                                    : 'bg-[#e9ecef] text-gray-600 border border-transparent'
                                     }`}
                             >
                                 3 inch
@@ -439,8 +440,8 @@ export function PrintSetting() {
                             <button
                                 onClick={() => setPageSize('4inch')}
                                 className={`px-5 py-1.5 rounded-[4px] text-[13px] font-medium transition-colors ${pageSize === '4inch'
-                                        ? 'border border-indigo-200 text-[#4F46E5] bg-[#ffffff]'
-                                        : 'bg-[#e9ecef] text-gray-600 border border-transparent'
+                                    ? 'border border-indigo-200 text-[#4F46E5] bg-[#ffffff]'
+                                    : 'bg-[#e9ecef] text-gray-600 border border-transparent'
                                     }`}
                             >
                                 4 inch
@@ -464,265 +465,275 @@ export function PrintSetting() {
 
 
                     {(transactionType === 'Glass Template' || pdfFormat !== 'Thermal Print') ? (
-                        <div
-                            ref={previewRef}
-                            className="bg-[#ffffff] shadow-sm shrink-0 text-[#000000] border border-black m-auto text-[11px]"
-                            style={{ ...getFormatStyles(), fontFamily: 'Arial, sans-serif' }}
-                        >
-                            {/* 1. Header Section */}
-                            <div className="w-full flex flex-col border-b border-black">
-                                <div className="text-center font-bold py-1 border-b border-black">{transactionType2.toUpperCase()} {transactionType2 === 'Income Transaction' ? '( Original )' : ''}</div>
-                                <div className="flex w-full p-2 h-[120px]">
-                                    {/* Logo */}
-                                    <div className="w-[120px] flex items-center justify-center">
-                                    </div>
-                                    {/* Company Info */}
-                                    <div className="flex-1 text-center flex flex-col items-center justify-center px-2">
-                                        <h2 className="text-[20px] font-bold">Swayam Bill Book</h2>
-                                        <p className="text-[12px] text-gray-500 font-medium">The Digital Accounting Book</p>
-                                        <p>NO, , OPP GRAM PANCHAYAT, SH 31, BELAGAVI, KARNATAKA, INDIA, 591220</p>
-                                        <p>Tel : 9845972853 | swayamsoftwaretarget@gmail.com</p>
-                                        <p>GSTIN: 29DCDPP7499L2ZH</p>
-                                        <p>pass BILL3: 1</p>
-                                    </div>
-                                    {/* QR Code */}
-                                    {headerSettings.showQrCode && (
+                        <>
+                            {(pdfFormat === 'A5' || pdfFormat === 'Landscape A5' || pdfFormat === 'A4 Half') && (
+                                <style type="text/css" media="print">
+                                    {`
+                                      @page {
+                                        size: ${pdfFormat === 'A5' ? 'A5 portrait' : 'A5 landscape'};
+                                        margin: 5mm;
+                                      }
+                                    `}
+                                </style>
+                            )}
+                            <div
+                                ref={previewRef}
+                                className={`bg-[#ffffff] shadow-sm shrink-0 text-[#000000] border border-black box-border flex flex-col justify-between w-full h-auto m-auto text-[11px] ${pdfFormat === 'A5' ? 'format-a5' : ''} ${(pdfFormat === 'Landscape A5' || pdfFormat === 'A4 Half') ? 'format-a5-landscape' : ''}`}
+                                style={{ ...getFormatStyles(), fontFamily: 'Arial, sans-serif' }}
+                            >
+                                {/* 1. Header Section */}
+                                <div className="w-full flex flex-col border-b border-black">
+                                    <div className="flex w-full pt-1.5 px-2 pb-1">
+                                        {/* Logo */}
                                         <div className="w-[120px] flex items-center justify-center">
-                                            <div className="w-[80px] h-[80px] bg-gray-100 flex items-center justify-center">
-                                                <img src={qrCodeUrl} alt="QR Code" className="w-full h-full" />
-                                            </div>
                                         </div>
-                                    )}
+                                        {/* Company Info */}
+                                        <div className="flex-1 text-center flex flex-col items-center justify-center px-2 gap-0.5">
+                                            <div className="font-bold mb-1">{transactionType2.toUpperCase()} {transactionType2 === 'Income Transaction' ? '( Original )' : ''}</div>
+                                            <h2 className="text-[20px] font-bold">Swayam Bill Book</h2>
+                                            <p className="text-[12px] text-gray-500 font-medium">The Digital Accounting Book</p>
+                                            <p>NO, , OPP GRAM PANCHAYAT, SH 31, BELAGAVI, KARNATAKA, INDIA, 591220</p>
+                                            <p>Tel : 9845972853 | swayamsoftwaretarget@gmail.com</p>
+                                            <p>GSTIN: 29DCDPP7499L2ZH</p>
+                                            <p>pass BILL3: 1</p>
+                                        </div>
+                                        {/* QR Code */}
+                                        {headerSettings.showQrCode && (
+                                            <div className="w-[120px] flex items-center justify-center">
+                                                <div className="w-[80px] h-[80px] bg-gray-100 flex items-center justify-center">
+                                                    <img src={qrCodeUrl} alt="QR Code" className="w-full h-full" />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* 2. Parties & Invoice Info */}
-                            <div className="w-full flex border-b border-black">
-                                {/* Bill To */}
-                                <div className="flex-1 border-r border-black p-2 flex flex-col">
-                                    <div className="text-[#4F46E5] mb-1 font-bold">Bill to:</div>
-                                    <div className="font-bold uppercase">{previewInvoice?.customer?.name || 'NISHIT'}</div>
-                                    <div className="uppercase">{previewInvoice?.customer?.address || 'A-406, 4TH FLOOR, MONARCH GAURAVPATH ROAD, PALIIIII, BAMBOO FLAT, ANDAMAN AND NICOBAR ISLANDS, INDIA'}</div>
-                                    <div className="uppercase">Contact No: {previewInvoice?.customer?.phone || '9XXXXXX321 | 9XXXXXX321'}</div>
-                                    <div>Email: {previewInvoice?.customer?.email || 'exa****@gmail.com'}</div>
-                                    <div className="uppercase">GSTIN: {previewInvoice?.customer?.gstin || '24AADCD6XXXXXXX'}</div>
-                                    <div className="uppercase">PAN: {previewInvoice?.customer?.pan || 'EDBARXXXXX'}</div>
+                                {/* 2. Parties & Invoice Info */}
+                                <div className="w-full flex border-b border-black">
+                                    {/* Bill To */}
+                                    <div className="flex-1 border-r border-black p-2 flex flex-col">
+                                        <div className="text-[#4F46E5] mb-1 font-bold">Bill to:</div>
+                                        <div className="font-bold uppercase">{previewInvoice?.customer?.name || 'NISHIT'}</div>
+                                        <div className="uppercase">{previewInvoice?.customer?.address || 'A-406, 4TH FLOOR, MONARCH GAURAVPATH ROAD, PALIIIII, BAMBOO FLAT, ANDAMAN AND NICOBAR ISLANDS, INDIA'}</div>
+                                        <div className="uppercase">Contact No: {previewInvoice?.customer?.phone || '9XXXXXX321 | 9XXXXXX321'}</div>
+                                        <div>Email: {previewInvoice?.customer?.email || 'exa****@gmail.com'}</div>
+                                        <div className="uppercase">GSTIN: {previewInvoice?.customer?.gstin || '24AADCD6XXXXXXX'}</div>
+                                        <div className="uppercase">PAN: {previewInvoice?.customer?.pan || 'EDBARXXXXX'}</div>
+                                    </div>
+                                    {/* Ship To */}
+                                    <div className="flex-[0.8] border-r border-black p-2 flex flex-col">
+                                        <div className="text-[#4F46E5] mb-1 font-bold">Ship to:</div>
+                                        <div className="font-bold uppercase">{previewInvoice?.customer?.name || 'NISHIT'}</div>
+                                        <div className="uppercase">{previewInvoice?.customer?.address || 'A-406, 4TH FLOOR, MONARCH GAURAVPATH ROAD, PAL, BAMBOO FLAT, ANDAMAN AND NICOBAR ISLANDS, INDIA'}</div>
+                                        <div className="uppercase">Contact No: {previewInvoice?.customer?.phone || '9XXXXXX321'}</div>
+                                        <div className="uppercase">GSTIN: {previewInvoice?.customer?.gstin || '24AADCD6XXXXXXX'}</div>
+                                        <div className="uppercase">PAN: {previewInvoice?.customer?.pan || 'EDBARXXXXX'}</div>
+                                    </div>
+                                    {/* Invoice Details */}
+                                    <div className="flex-[0.8] p-2 flex flex-col">
+                                        <div className="text-[#4F46E5] mb-1 font-bold">Invoice Details:</div>
+                                        <div className="flex justify-between"><span className="uppercase">Invoice No:</span> <span className="font-bold uppercase">{previewInvoice?.invoiceNo || 'MA22/2348'}</span></div>
+                                        <div className="flex justify-between"><span className="uppercase">Invoice Date:</span> <span className="font-bold uppercase">{previewInvoice?.date ? new Date(previewInvoice.date).toLocaleDateString('en-GB') : '24-08-2023'}</span></div>
+                                    </div>
                                 </div>
-                                {/* Ship To */}
-                                <div className="flex-[0.8] border-r border-black p-2 flex flex-col">
-                                    <div className="text-[#4F46E5] mb-1 font-bold">Ship to:</div>
-                                    <div className="font-bold uppercase">{previewInvoice?.customer?.name || 'NISHIT'}</div>
-                                    <div className="uppercase">{previewInvoice?.customer?.address || 'A-406, 4TH FLOOR, MONARCH GAURAVPATH ROAD, PAL, BAMBOO FLAT, ANDAMAN AND NICOBAR ISLANDS, INDIA'}</div>
-                                    <div className="uppercase">Contact No: {previewInvoice?.customer?.phone || '9XXXXXX321'}</div>
-                                    <div className="uppercase">GSTIN: {previewInvoice?.customer?.gstin || '24AADCD6XXXXXXX'}</div>
-                                    <div className="uppercase">PAN: {previewInvoice?.customer?.pan || 'EDBARXXXXX'}</div>
-                                </div>
-                                {/* Invoice Details */}
-                                <div className="flex-[0.8] p-2 flex flex-col">
-                                    <div className="text-[#4F46E5] mb-1 font-bold">Invoice Details:</div>
-                                    <div className="flex justify-between"><span className="uppercase">Invoice No:</span> <span className="font-bold uppercase">{previewInvoice?.invoiceNo || 'MA22/2348'}</span></div>
-                                    <div className="flex justify-between"><span className="uppercase">Invoice Date:</span> <span className="font-bold uppercase">{previewInvoice?.date ? new Date(previewInvoice.date).toLocaleDateString('en-GB') : '24-08-2023'}</span></div>
-                                </div>
-                            </div>
 
-                            {/* 3. Transport Details */}
-                            <div className="w-full flex border-b border-black">
-                                <div className="flex-[1.8] border-r border-black p-2 flex flex-col gap-1">
-                                    <div className="flex"><span className="w-32">Transport Name:</span> <span className="uppercase">{previewInvoice?.transportName || ''}</span></div>
-                                    <div className="flex"><span className="w-32">Document No:</span> <span className="uppercase">{previewInvoice?.documentNo || ''}</span></div>
-                                    <div className="flex"><span className="w-32">Document Date:</span> <span className="uppercase">{previewInvoice?.documentDate ? new Date(previewInvoice.documentDate).toLocaleDateString('en-GB') : ''}</span></div>
+                                {/* 3. Transport Details */}
+                                <div className="w-full flex border-b border-black">
+                                    <div className="flex-[1.8] border-r border-black p-2 flex flex-col gap-1">
+                                        <div className="flex"><span className="w-32">Transport Name:</span> <span className="uppercase">{previewInvoice?.transportName || ''}</span></div>
+                                        <div className="flex"><span className="w-32">Document No:</span> <span className="uppercase">{previewInvoice?.documentNo || ''}</span></div>
+                                        <div className="flex"><span className="w-32">Document Date:</span> <span className="uppercase">{previewInvoice?.documentDate ? new Date(previewInvoice.documentDate).toLocaleDateString('en-GB') : ''}</span></div>
+                                    </div>
+                                    <div className="flex-1 p-2 flex flex-col gap-1">
+                                        <div className="flex justify-between"><span className="w-32">Ack No:</span> <span className="uppercase">{previewInvoice?.ackNo || ''}</span></div>
+                                        <div className="flex justify-between"><span className="w-32">Ack Date:</span> <span className="uppercase">{previewInvoice?.ackDate ? new Date(previewInvoice.ackDate).toLocaleDateString('en-GB') : ''}</span></div>
+                                        <div className="flex justify-between"><span className="w-32">IRN:</span> <span className="uppercase">{previewInvoice?.irn || ''}</span></div>
+                                    </div>
                                 </div>
-                                <div className="flex-1 p-2 flex flex-col gap-1">
-                                    <div className="flex justify-between"><span className="w-32">Ack No:</span> <span className="uppercase">{previewInvoice?.ackNo || ''}</span></div>
-                                    <div className="flex justify-between"><span className="w-32">Ack Date:</span> <span className="uppercase">{previewInvoice?.ackDate ? new Date(previewInvoice.ackDate).toLocaleDateString('en-GB') : ''}</span></div>
-                                    <div className="flex justify-between"><span className="w-32">IRN:</span> <span className="uppercase">{previewInvoice?.irn || ''}</span></div>
-                                </div>
-                            </div>
 
-                            {/* 4. PO / E-way Details */}
-                            <div className="w-full flex border-b border-black">
-                                <div className="flex-1 border-r border-black p-2 flex flex-col gap-1">
-                                    <div className="flex justify-between"><span>PO No:</span> <span className="uppercase">{previewInvoice?.poNo || ''}</span></div>
-                                    <div className="flex justify-between"><span>PO Date:</span> <span className="uppercase">{previewInvoice?.poDate ? new Date(previewInvoice.poDate).toLocaleDateString('en-GB') : ''}</span></div>
+                                {/* 4. PO / E-way Details */}
+                                <div className="w-full flex border-b border-black">
+                                    <div className="flex-1 border-r border-black p-2 flex flex-col gap-1">
+                                        <div className="flex justify-between"><span>PO No:</span> <span className="uppercase">{previewInvoice?.poNo || ''}</span></div>
+                                        <div className="flex justify-between"><span>PO Date:</span> <span className="uppercase">{previewInvoice?.poDate ? new Date(previewInvoice.poDate).toLocaleDateString('en-GB') : ''}</span></div>
+                                    </div>
+                                    <div className="flex-1 border-r border-black p-2 flex flex-col gap-1">
+                                        <div className="flex justify-between"><span>E-way Bill No:</span> <span className="uppercase">{previewInvoice?.ewayBillNo || ''}</span></div>
+                                        <div className="flex justify-between"><span>E-way Bill Date:</span> <span className="uppercase">{previewInvoice?.ewayBillDate ? new Date(previewInvoice.ewayBillDate).toLocaleDateString('en-GB') : ''}</span></div>
+                                        <div className="flex justify-between"><span>Vehicle No:</span> <span className="uppercase">{previewInvoice?.vehicleNo || ''}</span></div>
+                                    </div>
+                                    <div className="flex-1 p-2 flex flex-col gap-1">
+                                        <div className="flex justify-between"><span>Custom field 1:</span> <span className="uppercase text-gray-500"></span></div>
+                                        <div className="flex justify-between"><span>Custom field 2:</span> <span className="uppercase text-gray-500"></span></div>
+                                        <div className="flex justify-between"><span>Custom field 3:</span> <span className="uppercase text-gray-500"></span></div>
+                                    </div>
                                 </div>
-                                <div className="flex-1 border-r border-black p-2 flex flex-col gap-1">
-                                    <div className="flex justify-between"><span>E-way Bill No:</span> <span className="uppercase">{previewInvoice?.ewayBillNo || ''}</span></div>
-                                    <div className="flex justify-between"><span>E-way Bill Date:</span> <span className="uppercase">{previewInvoice?.ewayBillDate ? new Date(previewInvoice.ewayBillDate).toLocaleDateString('en-GB') : ''}</span></div>
-                                    <div className="flex justify-between"><span>Vehicle No:</span> <span className="uppercase">{previewInvoice?.vehicleNo || ''}</span></div>
-                                </div>
-                                <div className="flex-1 p-2 flex flex-col gap-1">
-                                    <div className="flex justify-between"><span>Custom field 1:</span> <span className="uppercase text-gray-500"></span></div>
-                                    <div className="flex justify-between"><span>Custom field 2:</span> <span className="uppercase text-gray-500"></span></div>
-                                    <div className="flex justify-between"><span>Custom field 3:</span> <span className="uppercase text-gray-500"></span></div>
-                                </div>
-                            </div>
 
-                            {/* 5. Main Items Table */}
-                            <div className="w-full border-b border-black">
-                                <table className="w-full text-center border-collapse text-[10px] m-0">
-                                    <thead>
-                                        <tr className="bg-white border-b border-black">
-                                            <th className="border-r border-black p-1 font-normal">SN</th>
-                                            <th className="border-r border-black p-1 font-normal text-left">Item<br />Name</th>
-                                            {headerSettings.showCompanyProductCode && <th className="border-r border-black p-1 font-normal">Product<br />Code</th>}
-                                            {headerSettings.showBatchNo && <th className="border-r border-black p-1 font-normal">Batch<br />No</th>}
-                                            {headerSettings.showHsn && <th className="border-r border-black p-1 font-normal">HSN/<br />SAC</th>}
-                                            {headerSettings.showPurchasePrice && <th className="border-r border-black p-1 font-normal">Purchase<br />Price</th>}
-                                            {headerSettings.showMrp && <th className="border-r border-black p-1 font-normal">MRP</th>}
-                                            <th className="border-r border-black p-1 font-normal">Pcs</th>
-                                            {headerSettings.showSecondaryQty && <th className="border-r border-black p-1 font-normal">Sec.<br />Qty</th>}
-                                            {headerSettings.showPrimaryQty && <th className="border-r border-black p-1 font-normal">Pri.<br />Qty</th>}
+                                {/* 5. Main Items Table */}
+                                <div className="w-full border-b border-black">
+                                    <table className="w-full text-center border-collapse text-[10px] m-0">
+                                        <thead>
+                                            <tr className="bg-white border-b border-black">
+                                                <th className="border-r border-black p-1 font-normal">SN</th>
+                                                <th className="border-r border-black p-1 font-normal text-left">Item<br />Name</th>
+                                                {headerSettings.showCompanyProductCode && <th className="border-r border-black p-1 font-normal">Product<br />Code</th>}
+                                                {headerSettings.showBatchNo && <th className="border-r border-black p-1 font-normal">Batch<br />No</th>}
+                                                {headerSettings.showHsn && <th className="border-r border-black p-1 font-normal">HSN/<br />SAC</th>}
+                                                {headerSettings.showPurchasePrice && <th className="border-r border-black p-1 font-normal">Purchase<br />Price</th>}
+                                                {headerSettings.showMrp && <th className="border-r border-black p-1 font-normal">MRP</th>}
+                                                <th className="border-r border-black p-1 font-normal">Pcs</th>
+                                                {headerSettings.showSecondaryQty && <th className="border-r border-black p-1 font-normal">Sec.<br />Qty</th>}
+                                                {headerSettings.showPrimaryQty && <th className="border-r border-black p-1 font-normal">Pri.<br />Qty</th>}
 
-                                            {headerSettings.showUnit && <th className="border-r border-black p-1 font-normal">Unit</th>}
-                                            <th className="border-r border-black p-1 font-normal">Size</th>
-                                            <th className="border-r border-black p-1 font-normal">Pcs<br />Rate</th>
+                                                {headerSettings.showUnit && <th className="border-r border-black p-1 font-normal">Unit</th>}
+                                                <th className="border-r border-black p-1 font-normal">Size</th>
+                                                <th className="border-r border-black p-1 font-normal">Pcs<br />Rate</th>
 
-                                            {headerSettings.showDiscount1 && <th className="border-r border-black p-1 font-normal">Dis.<br />1</th>}
-                                            {headerSettings.showDiscount2 && <th className="border-r border-black p-1 font-normal">Dis.<br />2</th>}
-                                            {headerSettings.showDiscount && <th className="border-r border-black p-1 font-normal">Total<br />Dis.</th>}
-                                            <th className="border-r border-black p-1 font-normal">GST<br />(%)</th>
-                                            <th className="p-1 font-normal text-right">Taxable<br />Value</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="align-top">
-                                        {parsedItems.map((item, idx) => (
-                                            <tr key={idx}>
-                                                <td className="border-r border-black p-1 pt-2">{idx + 1}</td>
-                                                <td className="border-r border-black p-1 pt-2 text-left h-[50px]">
-                                                    {item.name}
-                                                    {item.desc && <><br /><span className="text-[9px]">{item.desc}</span></>}
-                                                </td>
-                                                {headerSettings.showCompanyProductCode && <td className="border-r border-black p-1 pt-2">{item.productCode || '-'}</td>}
-                                                {headerSettings.showBatchNo && <td className="border-r border-black p-1 pt-2">{item.batchNo || '-'}</td>}
-                                                {headerSettings.showHsn && <td className="border-r border-black p-1 pt-2">{item.hsnCode || '-'}</td>}
-                                                {headerSettings.showPurchasePrice && <td className="border-r border-black p-1 pt-2">{item.purchasePrice || '-'}</td>}
-                                                {headerSettings.showMrp && <td className="border-r border-black p-1 pt-2">{item.mrp || '-'}</td>}
-                                                <td className="border-r border-black p-1 pt-2">{item.qty || '-'}</td>
-                                                {headerSettings.showSecondaryQty && <td className="border-r border-black p-1 pt-2">{item.secQty || '-'}</td>}
-                                                {headerSettings.showPrimaryQty && <td className="border-r border-black p-1 pt-2">{item.priQty || '-'}</td>}
-                                                {headerSettings.showUnit && <td className="border-r border-black p-1 pt-2">{item.unit || '-'}</td>}
-                                                <td className="border-r border-black p-1 pt-2">{item.size || '-'}</td>
-                                                <td className="border-r border-black p-1 pt-2">{item.rate || '-'}</td>
-                                                {headerSettings.showDiscount1 && <td className="border-r border-black p-1 pt-2">{item.discount1 > 0 ? item.discount1 : '-'}</td>}
-                                                {headerSettings.showDiscount2 && <td className="border-r border-black p-1 pt-2">{item.discount2 > 0 ? item.discount2 : '-'}</td>}
-                                                {headerSettings.showDiscount && <td className="border-r border-black p-1 pt-2">{item.discount > 0 ? item.discount : '-'}</td>}
-                                                <td className="border-r border-black p-1 pt-2">{item.gstRate || '-'}</td>
-                                                <td className="p-1 pt-2 text-right">₹{item.taxableValue}</td>
+                                                {headerSettings.showDiscount1 && <th className="border-r border-black p-1 font-normal">Dis.<br />1</th>}
+                                                {headerSettings.showDiscount2 && <th className="border-r border-black p-1 font-normal">Dis.<br />2</th>}
+                                                {headerSettings.showDiscount && <th className="border-r border-black p-1 font-normal">Total<br />Dis.</th>}
+                                                <th className="border-r border-black p-1 font-normal">GST<br />(%)</th>
+                                                <th className="p-1 font-normal text-right">Taxable<br />Value</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody className="align-top">
+                                            {parsedItems.map((item, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="border-r border-black p-1 pt-2">{idx + 1}</td>
+                                                    <td className="border-r border-black p-1 pt-2 text-left h-[50px]">
+                                                        {item.name}
+                                                        {item.desc && <><br /><span className="text-[9px]">{item.desc}</span></>}
+                                                    </td>
+                                                    {headerSettings.showCompanyProductCode && <td className="border-r border-black p-1 pt-2">{item.productCode || '-'}</td>}
+                                                    {headerSettings.showBatchNo && <td className="border-r border-black p-1 pt-2">{item.batchNo || '-'}</td>}
+                                                    {headerSettings.showHsn && <td className="border-r border-black p-1 pt-2">{item.hsnCode || '-'}</td>}
+                                                    {headerSettings.showPurchasePrice && <td className="border-r border-black p-1 pt-2">{item.purchasePrice || '-'}</td>}
+                                                    {headerSettings.showMrp && <td className="border-r border-black p-1 pt-2">{item.mrp || '-'}</td>}
+                                                    <td className="border-r border-black p-1 pt-2">{item.qty || '-'}</td>
+                                                    {headerSettings.showSecondaryQty && <td className="border-r border-black p-1 pt-2">{item.secQty || '-'}</td>}
+                                                    {headerSettings.showPrimaryQty && <td className="border-r border-black p-1 pt-2">{item.priQty || '-'}</td>}
+                                                    {headerSettings.showUnit && <td className="border-r border-black p-1 pt-2">{item.unit || '-'}</td>}
+                                                    <td className="border-r border-black p-1 pt-2">{item.size || '-'}</td>
+                                                    <td className="border-r border-black p-1 pt-2">{item.rate || '-'}</td>
+                                                    {headerSettings.showDiscount1 && <td className="border-r border-black p-1 pt-2">{item.discount1 > 0 ? item.discount1 : '-'}</td>}
+                                                    {headerSettings.showDiscount2 && <td className="border-r border-black p-1 pt-2">{item.discount2 > 0 ? item.discount2 : '-'}</td>}
+                                                    {headerSettings.showDiscount && <td className="border-r border-black p-1 pt-2">{item.discount > 0 ? item.discount : '-'}</td>}
+                                                    <td className="border-r border-black p-1 pt-2">{item.gstRate || '-'}</td>
+                                                    <td className="p-1 pt-2 text-right">₹{item.taxableValue}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                            <div className="w-full flex border-b border-black text-[10px]">
-                                <div className="flex-[4] border-r border-black text-right p-1 font-bold">Total:</div>
-                                <div className="flex-1 border-r border-black p-1"></div>
-                                <div className="flex-1 border-r border-black p-1"></div>
-                                <div className="flex-1 border-r border-black p-1"></div>
-                                <div className="flex-1 border-r border-black p-1"></div>
-                                <div className="flex-[0.5] border-r border-black p-1"></div>
-                                <div className="flex-[0.5] border-r border-black p-1"></div>
-                                <div className="flex-[0.5] border-r border-black p-1"></div>
-                                <div className="flex-[0.5] border-r border-black p-1"></div>
-                                <div className="flex-[0.5] border-r border-black p-1"></div>
-                                <div className="flex-[0.5] border-r border-black p-1"></div>
-                                <div className="flex-[0.5] border-r border-black p-1"></div>
-                                <div className="flex-1 p-1 text-right font-bold">₹{totalTaxable.toFixed(2)}</div>
-                            </div>
+                                <div className="w-full flex border-b border-black text-[10px]">
+                                    <div className="flex-[4] border-r border-black text-right p-1 font-bold">Total:</div>
+                                    <div className="flex-1 border-r border-black p-1"></div>
+                                    <div className="flex-1 border-r border-black p-1"></div>
+                                    <div className="flex-1 border-r border-black p-1"></div>
+                                    <div className="flex-1 border-r border-black p-1"></div>
+                                    <div className="flex-[0.5] border-r border-black p-1"></div>
+                                    <div className="flex-[0.5] border-r border-black p-1"></div>
+                                    <div className="flex-[0.5] border-r border-black p-1"></div>
+                                    <div className="flex-[0.5] border-r border-black p-1"></div>
+                                    <div className="flex-[0.5] border-r border-black p-1"></div>
+                                    <div className="flex-[0.5] border-r border-black p-1"></div>
+                                    <div className="flex-[0.5] border-r border-black p-1"></div>
+                                    <div className="flex-1 p-1 text-right font-bold">₹{totalTaxable.toFixed(2)}</div>
+                                </div>
 
-                            {/* 6. Footer Layout */}
-                            <div className="w-full flex border-b border-black">
-                                {/* Left side info */}
-                                <div className="flex-[1.8] border-r border-black flex flex-col">
-                                    <div className="p-2 border-b border-black text-[10px]">
-                                        <div className="font-bold mb-1">Terms and Conditions:</div>
-                                        <div className="mb-1">{footerSettings.labelTermsAndConditions || "Terms and Conditions"}</div>
-                                        <p className="mb-2 text-gray-700">{previewInvoice?.terms || ''}</p>
+                                {/* 6. Footer Layout */}
+                                <div className="w-full flex border-b border-black">
+                                    {/* Left side info */}
+                                    <div className="flex-[1.8] border-r border-black flex flex-col">
+                                        <div className="p-0.5 border-b border-black text-[10px]">
+                                            <div className="font-bold mb-1">Terms and Conditions:</div>
+                                            <div className="mb-1">{footerSettings.labelTermsAndConditions || "Terms and Conditions"}</div>
+                                            <p className="mb-2 text-gray-700">{previewInvoice?.terms || ''}</p>
 
-                                        <div className="font-bold mb-1">Notes:</div>
-                                        <p className="text-gray-700">{previewInvoice?.notes || footerSettings.labelThankYouNote || ''}</p>
+                                            <div className="font-bold mb-1">Notes:</div>
+                                            <p className="text-gray-700">{previewInvoice?.notes || footerSettings.labelThankYouNote || ''}</p>
+                                        </div>
+                                        <div className="p-0.5 flex flex-col justify-end flex-1">
+                                            <div className="flex gap-2"><span>In Words:</span> <span>{previewInvoice?.amountInWords || ''}</span></div>
+                                            <div className="flex gap-2"><span>Payment Details:</span> <span>{previewInvoice?.paymentMode || 'Cash / Bank Transfer'}</span></div>
+                                        </div>
                                     </div>
-                                    <div className="p-2 flex flex-col justify-end flex-1">
-                                        <div className="flex gap-2"><span>In Words:</span> <span>{previewInvoice?.amountInWords || ''}</span></div>
-                                        <div className="flex gap-2"><span>Payment Details:</span> <span>{previewInvoice?.paymentMode || 'Cash / Bank Transfer'}</span></div>
+
+                                    {/* Right side summary */}
+                                    <div className="flex-1 flex flex-col">
+                                        <div className="p-0.5 border-b border-black flex flex-col gap-1 flex-1">
+                                            <div className="flex justify-between"><span>Credit Period:</span> <span>{previewInvoice?.creditPeriod ? `${previewInvoice.creditPeriod} Days` : ''}</span></div>
+                                            <div className="flex justify-between"><span>Due Date:</span> <span>{previewInvoice?.dueDate ? new Date(previewInvoice.dueDate).toLocaleDateString('en-GB') : ''}</span></div>
+                                            <div className="flex justify-between mt-2"><span>Broker:</span> <span>{previewInvoice?.brokerName || ''}</span></div>
+                                            <div className="flex justify-between"><span>GSTIN:</span> <span>{previewInvoice?.customer?.gstin || ''}</span></div>
+                                        </div>
+
+                                        <div className="p-0.5 border-b border-black flex flex-col gap-1">
+                                            <div className="flex justify-between"><span>Taxable Value:</span> <span>₹8,672.90</span></div>
+                                            <div className="flex justify-between"><span>IGST:</span> <span>₹544.00</span></div>
+                                            <div className="flex justify-between"><span>TCS:</span> <span>₹8.00</span></div>
+                                            <div className="flex justify-between"><span>Cess:</span> <span>₹45.00</span></div>
+                                            <div className="flex justify-between"><span>Round off:</span> <span>₹0.10</span></div>
+                                        </div>
+
+                                        <div className="p-0.5 flex justify-between font-bold text-[12px] h-full items-end">
+                                            <span>Total:</span> <span>₹{previewInvoice?.totalAmount ? Number(previewInvoice.totalAmount).toFixed(2) : totalFinal.toFixed(2)}</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Right side summary */}
-                                <div className="flex-1 flex flex-col">
-                                    <div className="p-2 border-b border-black flex flex-col gap-1 flex-1">
-                                        <div className="flex justify-between"><span>Credit Period:</span> <span>{previewInvoice?.creditPeriod ? `${previewInvoice.creditPeriod} Days` : ''}</span></div>
-                                        <div className="flex justify-between"><span>Due Date:</span> <span>{previewInvoice?.dueDate ? new Date(previewInvoice.dueDate).toLocaleDateString('en-GB') : ''}</span></div>
-                                        <div className="flex justify-between mt-2"><span>Broker:</span> <span>{previewInvoice?.brokerName || ''}</span></div>
-                                        <div className="flex justify-between"><span>GSTIN:</span> <span>{previewInvoice?.customer?.gstin || ''}</span></div>
-                                    </div>
+                                {/* 7. Tax Breakup Table */}
+                                <div className="w-full border-b border-black">
+                                    <table className="w-full text-center border-collapse text-[10px] m-0">
+                                        <thead>
+                                            <tr className="bg-white border-b border-black">
+                                                <th className="border-r border-black p-1 font-bold w-12">SN</th>
+                                                <th className="border-r border-black p-1 font-bold">HSN/SAC</th>
+                                                <th className="border-r border-black p-1 font-bold">Taxable Amount</th>
+                                                <th className="border-r border-black p-1 font-bold">GST (%)</th>
+                                                <th className="border-r border-black p-1 font-bold">IGST</th>
+                                                <th className="p-1 font-bold">Total Tax</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td className="border-r border-black p-1">1</td>
+                                                <td className="border-r border-black p-1">-</td>
+                                                <td className="border-r border-black p-1">₹{totalTaxable.toFixed(2)}</td>
+                                                <td className="border-r border-black p-1">0</td>
+                                                <td className="border-r border-black p-1">₹0.00</td>
+                                                <td className="p-1">₹0.00</td>
+                                            </tr>
+                                            <tr className="border-t border-black font-bold">
+                                                <td colSpan="2" className="border-r border-black p-1">Total</td>
+                                                <td className="border-r border-black p-1">₹{totalTaxable.toFixed(2)}</td>
+                                                <td className="border-r border-black p-1"></td>
+                                                <td className="border-r border-black p-1">₹{previewInvoice?.totalIgst ? Number(previewInvoice.totalIgst).toFixed(2) : '0.00'}</td>
+                                                <td className="p-1">₹{previewInvoice?.totalGstAmount ? Number(previewInvoice.totalGstAmount).toFixed(2) : '0.00'}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                                    <div className="p-2 border-b border-black flex flex-col gap-1">
-                                        <div className="flex justify-between"><span>Taxable Value:</span> <span>₹8,672.90</span></div>
-                                        <div className="flex justify-between"><span>IGST:</span> <span>₹544.00</span></div>
-                                        <div className="flex justify-between"><span>TCS:</span> <span>₹8.00</span></div>
-                                        <div className="flex justify-between"><span>Cess:</span> <span>₹45.00</span></div>
-                                        <div className="flex justify-between"><span>Round off:</span> <span>₹0.10</span></div>
+                                {/* 8. Bottom Footer */}
+                                <div className="w-full border-t border-black grid grid-cols-2 text-[6.8px] leading-[1.15] box-border mt-auto">
+                                    <div className="p-1 border-r border-black flex flex-col justify-center gap-[1px]">
+                                        <p><strong>Bank:</strong> {previewInvoice?.bankName || allPrintSettings?.bankDetails?.bankName || 'sbi bank of india'}</p>
+                                        <p><strong>IFSC Code:</strong> {previewInvoice?.bankIfsc || allPrintSettings?.bankDetails?.bankIfsc || 'acb4657574232'}</p>
+                                        <p><strong>A/C Number:</strong> {previewInvoice?.bankAccountNo || allPrintSettings?.bankDetails?.bankAccountNo || '5346757'}</p>
+                                        <p><strong>Bank Branch:</strong> {previewInvoice?.bankBranch || allPrintSettings?.bankDetails?.bankBranch || 'karanatak'}</p>
+                                        <p><strong>A/C Name:</strong> {previewInvoice?.bankAccountName || allPrintSettings?.bankDetails?.bankAccountName || '1213243543454'}</p>
+                                        <p><strong>UPI ID:</strong> {previewInvoice?.upiId || allPrintSettings?.bankDetails?.upiId || '4254'}</p>
                                     </div>
-
-                                    <div className="p-2 flex justify-between font-bold text-[12px] h-full items-end">
-                                        <span>Total:</span> <span>₹{previewInvoice?.totalAmount ? Number(previewInvoice.totalAmount).toFixed(2) : totalFinal.toFixed(2)}</span>
+                                    <div className="p-1 flex flex-col justify-between items-end text-right min-h-[45px] pb-1">
+                                        <p className="font-semibold">For, SWAYAM BILLING SOFTWARE</p>
+                                        <p className="font-medium text-[6px]">Authorized Signatory</p>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* 7. Tax Breakup Table */}
-                            <div className="w-full border-b border-black">
-                                <table className="w-full text-center border-collapse text-[10px] m-0">
-                                    <thead>
-                                        <tr className="bg-white border-b border-black">
-                                            <th className="border-r border-black p-1 font-bold w-12">SN</th>
-                                            <th className="border-r border-black p-1 font-bold">HSN/SAC</th>
-                                            <th className="border-r border-black p-1 font-bold">Taxable Amount</th>
-                                            <th className="border-r border-black p-1 font-bold">GST (%)</th>
-                                            <th className="border-r border-black p-1 font-bold">IGST</th>
-                                            <th className="p-1 font-bold">Total Tax</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td className="border-r border-black p-1">1</td>
-                                            <td className="border-r border-black p-1">-</td>
-                                            <td className="border-r border-black p-1">₹{totalTaxable.toFixed(2)}</td>
-                                            <td className="border-r border-black p-1">0</td>
-                                            <td className="border-r border-black p-1">₹0.00</td>
-                                            <td className="p-1">₹0.00</td>
-                                        </tr>
-                                        <tr className="border-t border-black font-bold">
-                                            <td colSpan="2" className="border-r border-black p-1">Total</td>
-                                            <td className="border-r border-black p-1">₹{totalTaxable.toFixed(2)}</td>
-                                            <td className="border-r border-black p-1"></td>
-                                            <td className="border-r border-black p-1">₹{previewInvoice?.totalIgst ? Number(previewInvoice.totalIgst).toFixed(2) : '0.00'}</td>
-                                            <td className="p-1">₹{previewInvoice?.totalGstAmount ? Number(previewInvoice.totalGstAmount).toFixed(2) : '0.00'}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
                             </div>
-
-                            {/* 8. Bottom Footer */}
-                            <div className="w-full flex flex-1">
-                                <div className="flex-[1.8] flex flex-col justify-start">
-                                    <div className="p-2 border-r border-black flex flex-col gap-1 w-full">
-                                        <div className="flex"><span className="w-24">Bank:</span> <span>{previewInvoice?.bankName || allPrintSettings?.bankDetails?.bankName || ''}</span></div>
-                                        <div className="flex"><span className="w-24">IFSC Code:</span> <span>{previewInvoice?.bankIfsc || allPrintSettings?.bankDetails?.bankIfsc || ''}</span></div>
-                                        <div className="flex"><span className="w-24">A/C Number:</span> <span>{previewInvoice?.bankAccountNo || allPrintSettings?.bankDetails?.bankAccountNo || ''}</span></div>
-                                        <div className="flex"><span className="w-24">Bank Branch:</span> <span>{previewInvoice?.bankBranch || allPrintSettings?.bankDetails?.bankBranch || ''}</span></div>
-                                        <div className="flex"><span className="w-24">A/C Name:</span> <span>{previewInvoice?.bankAccountName || allPrintSettings?.bankDetails?.bankAccountName || ''}</span></div>
-                                        <div className="flex"><span className="w-24">UPI ID:</span> <span>{previewInvoice?.upiId || allPrintSettings?.bankDetails?.upiId || ''}</span></div>
-                                    </div>
-                                </div>
-                                <div className="flex-1 p-2 flex flex-col justify-between items-end text-right h-full pb-4">
-                                    <div>For, SWAYAM BILLING<br />SOFTWARE</div>
-                                    <div className="mt-16 text-gray-700">Authorized Signatory</div>
-                                </div>
-                            </div>
-
-                        </div>
+                        </>
                     ) : (
                         <div
                             ref={previewRef}
@@ -1398,34 +1409,13 @@ export function PrintSetting() {
                             {/* Template Preview Box */}
                             <div className="flex flex-col items-center shrink-0">
                                 <div ref={invoiceRef} className="border-[1px] border-[#e5e7eb] rounded-[4px] w-full max-w-[750px] bg-white p-4 overflow-auto">
-                                    <Template1 
+                                    <Template1
+                                        pdfFormat={pdfFormat}
                                         previewInvoice={previewInvoice}
-                                        parsedItems={previewInvoice?.items?.map(i => ({
-                                            name: (i.product?.name || i.name || 'Unknown') + (i.description ? ` - ${i.description}` : ''),
-                                            productCode: i.productCode || i.product?.code || '-',
-                                            batchNo: i.batchNo || i.product?.batchNo || '-',
-                                            hsn: i.hsnCode || i.product?.hsnCode || '-',
-                                            purchasePrice: i.purchasePrice || i.product?.purchasePrice || 0,
-                                            mrp: i.mrp || i.product?.mrp || 0,
-                                            pcs: i.quantity || 1,
-                                            secQty: i.secOpeningQty || '-',
-                                            priQty: i.primaryOpeningQty || i.quantity || '-',
-                                            unit: i.unit || i.sUnit || i.pUnit || i.product?.baseUnit || '-',
-                                            size: i.size || '-',
-                                            pcsRate: i.price || 0,
-                                            discount: i.discount1 || i.disc1 || 0,
-                                            discount2: i.discount2 || i.disc2 || 0,
-                                            totalDiscount: (i.discount1 || i.disc1 || 0) + (i.discount2 || i.disc2 || 0),
-                                            taxPercent: i.taxRate || i.gstRate || i.product?.tax || 0,
-                                            taxableValue: i.amount || 0,
-                                            quantity: i.quantity || 1,
-                                            freeQty: i.freeQty || 0,
-                                            price: i.price || 0,
-                                            total: i.amount || 0
-                                        })) || []}
+                                        parsedItems={parsedItems}
                                         totalQty={totalQty}
-                                        totalTaxable={totalTaxable.toFixed(2)}
-                                        totalFinal={totalFinal.toFixed(2)}
+                                        totalTaxable={Number(totalTaxable) || 0}
+                                        totalFinal={Number(totalFinal) || 0}
                                         qrCodeUrl={qrCodeUrl}
                                         allPrintSettings={allPrintSettings}
                                         headerSettings={headerSettings}
@@ -1442,8 +1432,58 @@ export function PrintSetting() {
                                 </div>
                             </div>
 
-                            {/* Optional Right Area for other templates if needed */}
-                            <div className="flex-1 ml-8"></div>
+                            {/* Template Format Selection Area */}
+                            <div className="flex-1 ml-8 flex flex-col gap-4 overflow-y-auto">
+                                <h4 className="text-[16px] font-bold text-[#1f2937] border-b border-[#e5e7eb] pb-3">Available Invoice Formats</h4>
+                                <div className="flex flex-col gap-3">
+                                    {[
+                                        { id: 'General Template', title: 'General Template', desc: 'Standard GST tax invoice with clean borders & complete company details', badge: 'Standard' },
+                                        { id: 'Glass Template', title: 'Glass Template', desc: 'Modern styled format with elegant header & soft border accents', badge: 'Modern' },
+                                        { id: 'GST Tax Invoice', title: 'GST Tax Invoice', desc: 'Structured layout emphasizing tax breakdown & HSN code summary', badge: 'GST Focus' },
+                                        { id: 'Classic Template', title: 'Classic Template', desc: 'Traditional compact invoice format for fast printing', badge: 'Classic' },
+                                        { id: 'Thermal Print', title: 'Thermal POS (3-inch)', desc: 'Compact receipt format designed for POS thermal roll printers', badge: 'POS Thermal' }
+                                    ].map((tpl) => {
+                                        const isSelected = (tpl.id === 'Thermal Print' && pdfFormat === 'Thermal Print') || (tpl.id === transactionType && pdfFormat !== 'Thermal Print');
+                                        return (
+                                            <div
+                                                key={tpl.id}
+                                                onClick={() => {
+                                                    if (tpl.id === 'Thermal Print') {
+                                                        setPdfFormat('Thermal Print');
+                                                        setTransactionType('General Template');
+                                                    } else {
+                                                        if (pdfFormat === 'Thermal Print') setPdfFormat('A4');
+                                                        setTransactionType(tpl.id);
+                                                    }
+                                                    try {
+                                                        localStorage.setItem('selectedPrintTemplate', tpl.id);
+                                                    } catch (e) {}
+                                                }}
+                                                className={`p-4 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-between ${
+                                                    isSelected 
+                                                        ? 'border-[#4F46E5] bg-indigo-50/50 shadow-sm' 
+                                                        : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-[14px] text-gray-900">{tpl.title}</span>
+                                                        <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-100 text-[#4F46E5] font-semibold">{tpl.badge}</span>
+                                                    </div>
+                                                    <p className="text-[12px] text-gray-500">{tpl.desc}</p>
+                                                </div>
+                                                <div>
+                                                    {isSelected ? (
+                                                        <span className="px-3 py-1 bg-[#4F46E5] text-white rounded text-[11px] font-bold shadow-sm">SELECTED</span>
+                                                    ) : (
+                                                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-[11px] font-medium hover:bg-indigo-100">Select</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Modal Footer */}
