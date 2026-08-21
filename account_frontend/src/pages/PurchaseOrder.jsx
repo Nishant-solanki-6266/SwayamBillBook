@@ -770,6 +770,36 @@ export function PurchaseOrder() {
     return sum;
   }, 0);
 
+  const handleGridKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      if (document.querySelector('.product-dropdown-menu') || document.querySelector('.ReactModalPortal > div')) return;
+      const rowContainer = e.target.closest('.grid.bg-white.border-b, tr');
+      if (!rowContainer) return;
+      
+      const focusables = Array.from(rowContainer.querySelectorAll('input:not([disabled]):not([type="hidden"]), select:not([disabled]), button:not([disabled]):not(.text-gray-400), [tabindex="0"]'));
+      const currentIndex = focusables.indexOf(e.target);
+      if (currentIndex > -1) {
+        e.preventDefault();
+        if (currentIndex < focusables.length - 1) {
+          focusables[currentIndex + 1].focus();
+        } else {
+          const addBtn = rowContainer.querySelector('button.text-\\[\\#28a745\\]') || rowContainer.querySelector('.lucide-plus-square')?.closest('button');
+          if (addBtn) {
+            addBtn.click();
+            setTimeout(() => {
+              const gridRows = document.querySelectorAll('.grid.bg-white.border-b');
+              if (gridRows.length > 0) {
+                const lastRow = gridRows[gridRows.length - 1];
+                const firstInput = lastRow.querySelector('input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex="0"]');
+                if (firstInput) firstInput.focus();
+              }
+            }, 100);
+          }
+        }
+      }
+    }
+  };
+
   return (
     <>
     <div className="bg-[#f4f6f9] min-h-[calc(100vh-45px)] flex flex-col relative pb-12">
@@ -1023,7 +1053,7 @@ export function PurchaseOrder() {
             {rows.map((row, idx) => {
               const rowCalc = calculateRowAmount(row);
               return (
-                <div key={idx} style={{ gridTemplateColumns }} className="grid bg-white border-b border-gray-200">
+                <div key={idx} style={{ gridTemplateColumns }} className="grid bg-white border-b border-gray-200" onKeyDown={handleGridKeyDown}>
                   {columnOrder.map(colId => {
                     if (!colVisible[colId]) return null;
                     switch (colId) {
@@ -1571,8 +1601,44 @@ export function PurchaseOrder() {
       <ImportInvoiceAIModal 
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
-        onImport={(data) => {
-          setIsImportModalOpen(false);
+        onDataExtracted={(data) => {
+          if (data.invoiceDate) {
+            try { setInvoiceDate(new Date(data.invoiceDate).toISOString().split('T')[0]); } catch(e){}
+          }
+          if (data.invoiceNo) {
+            setSearchInvoiceNo(data.invoiceNo);
+          }
+          if (data.notes) {
+            setRemark(data.notes);
+          }
+          if (data.supplierId) {
+            setSelectedCustomerId(data.supplierId);
+          } else if (data.supplierName) {
+            const match = customers.find(c => 
+              c.name.toLowerCase().includes(data.supplierName.toLowerCase()) || 
+              (c.gstin && data.supplierGstin && c.gstin.toLowerCase() === data.supplierGstin.toLowerCase())
+            );
+            if (match) setSelectedCustomerId(match.id);
+          }
+
+          if (data.items && data.items.length > 0) {
+            const mappedRows = data.items.map(item => {
+              const matchedProd = products.find(p => p.id === item.matchedProductId) || products.find(p => p.name.toLowerCase() === item.productName?.toLowerCase());
+              return {
+                ...createEmptyRow(),
+                productId: matchedProd ? matchedProd.id : '',
+                productName: item.productName || (matchedProd ? matchedProd.name : ''),
+                brandName: matchedProd ? matchedProd.brand : '',
+                primaryOpeningQty: item.quantity || 0,
+                qty: item.quantity || 0,
+                price: item.price || 0,
+                disc1: item.discount || 0,
+                gstRate: item.taxPercent || 0,
+                amount: item.amount || 0,
+              };
+            });
+            setRows([...mappedRows, createEmptyRow()]);
+          }
         }}
       />
 
@@ -1597,7 +1663,7 @@ export function PurchaseOrder() {
               mrp: parseFloat(newProduct.mrp) || 0,
               stock: parseInt(newProduct.qty) || 0,
             };
-            if (editingProduct) {
+            if (editingProduct && editingProduct.id) {
               await apiClient.put(`/products/${editingProduct.id}`, payload);
             } else {
               const res = await apiClient.post('/products', payload);

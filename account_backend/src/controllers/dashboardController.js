@@ -33,6 +33,11 @@ exports.getMetrics = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Company ID is required for tenant metrics' });
     }
 
+    const targetDate = req.query.date ? new Date(req.query.date) : new Date();
+    const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0);
+    const endOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999);
+    const dateStr = startOfDay.toISOString().split('T')[0];
+
     const totalCustomers = await prisma.customer.count({ where: { companyId } });
     const totalProducts = await prisma.product.count({ where: { companyId } });
     const totalInvoicesCount = await prisma.invoice.count({ where: { companyId, deletedAt: null } });
@@ -151,28 +156,58 @@ exports.getMetrics = async (req, res) => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
-    const expiredItemsQuery = await prisma.invoiceItem.findMany({
+    const expiredProductIds = new Set();
+
+    // 1. Direct Product Level Expiry
+    const expiredDirectProducts = await prisma.product.findMany({
       where: {
-        invoice: { companyId, type: 'PURCHASE', deletedAt: null },
-        expDate: { not: null, not: "" }
+        companyId: companyId,
+        deletedAt: null,
+        expiryMonth: {
+          not: null,
+          not: ''
+        }
       },
-      select: { productId: true, expDate: true }
-    });
-    const uniqueExpiredKeys = new Set();
-    let expiredCount = 0;
-    expiredItemsQuery.forEach(item => {
-      const expDate = new Date(item.expDate);
-      if (!isNaN(expDate.getTime())) {
-        expDate.setHours(0, 0, 0, 0);
-        if (expDate < now) {
-          const key = `${item.productId}_${item.expDate}`;
-          if (!uniqueExpiredKeys.has(key)) {
-            uniqueExpiredKeys.add(key);
-            expiredCount++;
+      select: { id: true, expiryMonth: true }
+    }).catch(() => []);
+
+    expiredDirectProducts.forEach(p => {
+      if (p.expiryMonth) {
+        const exp = new Date(p.expiryMonth);
+        if (!isNaN(exp.getTime())) {
+          exp.setHours(0, 0, 0, 0);
+          if (exp < now) {
+            expiredProductIds.add(p.id);
           }
         }
       }
     });
+
+    // 2. Batch / Purchase Item Level Expiry
+    const expiredBatches = await prisma.invoiceItem.findMany({
+      where: {
+        invoice: { companyId: companyId, deletedAt: null },
+        expDate: {
+          not: null,
+          not: ''
+        }
+      },
+      select: { productId: true, expDate: true }
+    }).catch(() => []);
+
+    expiredBatches.forEach(b => {
+      if (b.expDate) {
+        const exp = new Date(b.expDate);
+        if (!isNaN(exp.getTime()) && b.productId) {
+          exp.setHours(0, 0, 0, 0);
+          if (exp < now) {
+            expiredProductIds.add(b.productId);
+          }
+        }
+      }
+    });
+
+    const expiredCount = expiredProductIds.size;
 
     const followupsCount = await prisma.followup.count({
       where: { customer: { companyId } }
@@ -229,6 +264,21 @@ exports.getMetrics = async (req, res) => {
       where: { companyId, deletedAt: { not: null } }
     });
 
+    // Sum expenses from ExpenseTransaction table
+    const expenseTransactionSum = await prisma.expenseTransaction.aggregate({
+      where: {
+        companyId,
+        OR: [
+          { date: { gte: startOfDay, lte: endOfDay } },
+          { createdAt: { gte: startOfDay, lte: endOfDay } }
+        ]
+      },
+      _sum: { paidAmount: true, expenseAmount: true }
+    }).catch(() => ({ _sum: { paidAmount: 0, expenseAmount: 0 } }));
+
+    // Use paidAmount for Today's Expenses as this is what hits the cashbook, or fallback to expenseAmount
+    const totalTodayExpense = Number(expenseTransactionSum?._sum?.paidAmount || expenseTransactionSum?._sum?.expenseAmount || 0);
+
     res.status(200).json({
       success: true,
       data: {
@@ -238,7 +288,9 @@ exports.getMetrics = async (req, res) => {
         todaysSale,
         todayPurchase,
         currentStockStatus,
-        todaysExpenses: todaysExpensesTotal,
+        todaysExpenses: totalTodayExpense,
+        todayExpenses: totalTodayExpense,
+        todayExpense: totalTodayExpense,
         customerOutstanding,
         companyOutstanding,
         allAccountsBalance,

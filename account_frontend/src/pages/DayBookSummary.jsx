@@ -22,35 +22,41 @@ export function DayBookSummary() {
       let apiFromDate = '';
       let apiToDate = '';
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      
+      const getLocalDateStr = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
 
       if (dateFilter === 'Today') {
-        apiFromDate = today.toISOString().split('T')[0];
+        apiFromDate = getLocalDateStr(today);
         apiToDate = apiFromDate;
       } else if (dateFilter === 'Yesterday') {
         const y = new Date(today);
         y.setDate(y.getDate() - 1);
-        apiFromDate = y.toISOString().split('T')[0];
+        apiFromDate = getLocalDateStr(y);
         apiToDate = apiFromDate;
       } else if (dateFilter === 'Last 7 Days') {
         const l7 = new Date(today);
         l7.setDate(l7.getDate() - 7);
-        apiFromDate = l7.toISOString().split('T')[0];
-        apiToDate = today.toISOString().split('T')[0];
+        apiFromDate = getLocalDateStr(l7);
+        apiToDate = getLocalDateStr(today);
       } else if (dateFilter === 'Last 30 Days') {
         const l30 = new Date(today);
         l30.setDate(l30.getDate() - 30);
-        apiFromDate = l30.toISOString().split('T')[0];
-        apiToDate = today.toISOString().split('T')[0];
+        apiFromDate = getLocalDateStr(l30);
+        apiToDate = getLocalDateStr(today);
       } else if (dateFilter === 'This Month') {
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        apiFromDate = firstDay.toISOString().split('T')[0];
-        apiToDate = today.toISOString().split('T')[0];
+        apiFromDate = getLocalDateStr(firstDay);
+        apiToDate = getLocalDateStr(today);
       } else if (dateFilter === 'Last Month') {
         const firstDayLM = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         const lastDayLM = new Date(today.getFullYear(), today.getMonth(), 0);
-        apiFromDate = firstDayLM.toISOString().split('T')[0];
-        apiToDate = lastDayLM.toISOString().split('T')[0];
+        apiFromDate = getLocalDateStr(firstDayLM);
+        apiToDate = getLocalDateStr(lastDayLM);
       } else if (dateFilter === 'Custom Range') {
         apiFromDate = startDate;
         apiToDate = endDate;

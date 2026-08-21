@@ -123,18 +123,42 @@ export function ProductSelectDropdown({ products, value, selectedVariant, onChan
     }
   };
 
+  const focusNextInGrid = () => {
+    setTimeout(() => {
+      if (dropdownRef.current) {
+        const row = dropdownRef.current.closest('.grid.bg-white.border-b, tr, .grid-row-container');
+        if (row) {
+          const focusables = Array.from(row.querySelectorAll('input:not([disabled]):not([type="hidden"]), select:not([disabled]), button:not([disabled]):not(.text-gray-400), [tabindex="0"]'));
+          const myIdx = focusables.findIndex(el => el === dropdownRef.current || dropdownRef.current.contains(el));
+          if (myIdx > -1 && myIdx < focusables.length - 1) {
+            focusables[myIdx + 1].focus();
+          }
+        }
+      }
+    }, 50);
+  };
+
   const handleSelect = (productId, variant = null) => {
     onChange(productId, variant);
     setIsOpen(false);
     setSearchTerm('');
+    focusNextInGrid();
   };
 
   return (
     <div className="relative w-full h-full flex items-center gap-1" ref={dropdownRef}>
       {/* Dropdown Trigger */}
       <div 
-        className="flex-1 h-full border border-transparent rounded-[3px] px-2 py-1 text-[13px] outline-none font-bold text-gray-800 bg-transparent flex items-center justify-between cursor-pointer hover:border-gray-300 min-w-0"
+        className="flex-1 h-full border border-transparent rounded-[3px] px-2 py-1 text-[13px] outline-none font-bold text-gray-800 bg-transparent flex items-center justify-between cursor-pointer hover:border-gray-300 min-w-0 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200"
         onClick={() => setIsOpen(!isOpen)}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(true);
+          }
+        }}
       >
         <span className="truncate flex-1 text-left">
           {(() => {

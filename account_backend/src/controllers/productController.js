@@ -313,13 +313,18 @@ exports.updateProduct = async (req, res) => {
     attributeValues
   } = req.body;
   try {
-    const existing = await prisma.product.findUnique({ where: { id: parseInt(id, 10) } });
+    const productId = parseInt(id, 10);
+    if (isNaN(productId)) {
+      return res.status(400).json({ success: false, message: 'Invalid product ID' });
+    }
+
+    const existing = await prisma.product.findUnique({ where: { id: productId } });
     if (!existing || existing.companyId !== companyId) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
     const product = await prisma.product.update({
-      where: { id: parseInt(id, 10) },
+      where: { id: productId },
       data: {
         ...(name && { name }),
         ...(sku && { sku }),

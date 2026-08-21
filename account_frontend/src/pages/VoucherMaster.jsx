@@ -7,9 +7,11 @@ import {
   Plus,
   Trash2,
   RefreshCw,
-  Edit
+  Edit,
+  ArrowUpDown
 } from 'lucide-react';
 import { VoucherMasterModal } from '../components/VoucherMasterModal';
+import { FixVoucherSeriesModal } from '../components/FixVoucherSeriesModal';
 
 export function VoucherMaster() {
   const navigate = useNavigate();
@@ -17,7 +19,9 @@ export function VoucherMaster() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('Voucher Type');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFixModalOpen, setIsFixModalOpen] = useState(false);
   const [editRow, setEditRow] = useState(null);
+  const [fixRow, setFixRow] = useState(null);
 
   const fetchVouchers = async () => {
     try {
@@ -38,13 +42,13 @@ export function VoucherMaster() {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     if (searchFilter === 'Voucher Type') {
-      return row.type && row.type.toLowerCase().includes(query);
+      return row.voucherType && row.voucherType.toLowerCase().includes(query);
     }
     if (searchFilter === 'Voucher Id') {
-      return row.voucherId && row.voucherId.toLowerCase().includes(query);
+      return row.voucherId && String(row.voucherId).toLowerCase().includes(query);
     }
     if (searchFilter === 'Voucher Head') {
-      return row.head && row.head.toLowerCase().includes(query);
+      return row.voucherHead && row.voucherHead.toLowerCase().includes(query);
     }
     return true;
   });
@@ -78,6 +82,21 @@ export function VoucherMaster() {
       } catch (err) {
         console.error('Failed to delete voucher:', err);
       }
+    }
+  };
+
+  const handleFixSeriesSave = async (data) => {
+    try {
+      const res = await apiClient.post('/vouchers/fix-series', data);
+      if (res.data.success) {
+        fetchVouchers();
+        setIsFixModalOpen(false);
+        setFixRow(null);
+        alert('Voucher series updated successfully');
+      }
+    } catch (err) {
+      console.error('Failed to fix voucher series:', err);
+      alert('Failed to update series');
     }
   };
 
@@ -151,15 +170,18 @@ export function VoucherMaster() {
                 filteredRows.map((row, idx) => (
                   <tr key={row.id} className="border-b border-gray-200 hover:bg-gray-100 text-[13px] transition-colors">
                     <td className="py-2 px-3 text-gray-700 border-r border-gray-200">{idx + 1}</td>
-                    <td className="py-2 px-3 text-gray-700 border-r border-gray-200">{row.type}</td>
-                    <td className="py-2 px-3 text-gray-700 border-r border-gray-200">{row.head || ''}</td>
+                    <td className="py-2 px-3 text-gray-700 border-r border-gray-200">{row.voucherType}</td>
+                    <td className="py-2 px-3 text-gray-700 border-r border-gray-200">{row.voucherHead || ''}</td>
                     <td className="py-2 px-3 text-gray-700 border-r border-gray-200">{row.voucherId}</td>
                     <td className="py-2 px-3 border-r border-gray-200">
                       <div className="flex items-center justify-start gap-1">
-                        <button onClick={() => handleEdit(row)} className="bg-[#17a2b8] hover:bg-[#138496] text-white p-1 rounded-[3px] transition-colors shadow-sm">
+                        <button onClick={() => handleEdit(row)} className="bg-[#17a2b8] hover:bg-[#138496] text-white p-1 rounded-[3px] transition-colors shadow-sm" title="Edit">
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(row.id)} className="bg-[#dc3545] hover:bg-[#c82333] text-white p-1 rounded-[3px] transition-colors shadow-sm">
+                        <button onClick={() => { setFixRow(row); setIsFixModalOpen(true); }} className="bg-[#28a745] hover:bg-[#218838] text-white p-1 rounded-[3px] transition-colors shadow-sm" title="Fix Series">
+                          <ArrowUpDown className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDelete(row.id)} className="bg-[#dc3545] hover:bg-[#c82333] text-white p-1 rounded-[3px] transition-colors shadow-sm" title="Delete">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -178,6 +200,12 @@ export function VoucherMaster() {
         onClose={() => { setIsModalOpen(false); setEditRow(null); }}
         onSave={handleSaveVoucher}
         editData={editRow}
+      />
+      <FixVoucherSeriesModal
+        isOpen={isFixModalOpen}
+        onClose={() => { setIsFixModalOpen(false); setFixRow(null); }}
+        onSave={handleFixSeriesSave}
+        voucherData={fixRow}
       />
     </div>
   );

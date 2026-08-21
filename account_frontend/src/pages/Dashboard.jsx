@@ -44,7 +44,7 @@ export function Dashboard() {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const response = await apiClient.get('/dashboard/metrics');
+        const response = await apiClient.get(`/dashboard/metrics?date=${selectedDate}`);
         if (response.data.success) {
           setMetrics(response.data.data);
         }
@@ -53,7 +53,7 @@ export function Dashboard() {
       }
     };
     fetchMetrics();
-  }, []);
+  }, [selectedDate]);
 
   return (
     <div className="flex flex-col">
@@ -131,7 +131,7 @@ export function Dashboard() {
           />
           <StatCard 
             title="Today's Expenses"
-            amount={metrics.todaysExpenses ? parseFloat(metrics.todaysExpenses).toFixed(2) : "0"} 
+            amount={Number(metrics?.todayExpenses ?? metrics?.todayExpense ?? metrics?.todaysExpenses ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 
             color="red" 
             showEye={false}
             isPrivacyOn={isPrivacyOn}

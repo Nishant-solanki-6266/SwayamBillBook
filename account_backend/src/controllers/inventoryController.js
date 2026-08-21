@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { updateStock } = require('../services/inventoryService');
+const { getAndIncrementVoucherNumber, mapInvoiceTypeToVoucher } = require('./voucherController');
 
 /**
  * Validates transaction type against allowed enum values
@@ -25,8 +26,7 @@ exports.createTransaction = async (req, res) => {
   } = req.body;
   const companyId = req.user.companyId;
 
-  // Auto-generate invoiceNo if not provided by the client
-  const invoiceNo = req.body.invoiceNo || `${type.toUpperCase()}-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+  // invoiceNo will be generated atomically inside the transaction
 
   if (!isValidTransactionType(type)) {
     return res.status(400).json({ error: "Invalid transaction type" });
@@ -39,10 +39,11 @@ exports.createTransaction = async (req, res) => {
   try {
     // We use a transaction to ensure both invoice creation and stock updates happen atomically
     const result = await prisma.$transaction(async (tx) => {
+      const generatedInvoiceNo = req.body.invoiceNo || await getAndIncrementVoucherNumber(companyId, mapInvoiceTypeToVoucher(type.toUpperCase()), tx);
       // 1. Create the Transaction (Invoice)
       const invoice = await tx.invoice.create({
         data: {
-          invoiceNo,
+          invoiceNo: generatedInvoiceNo,
           date: date ? new Date(date) : new Date(),
           type: type.toUpperCase(),
           subTotal,

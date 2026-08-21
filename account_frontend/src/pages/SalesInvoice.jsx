@@ -67,6 +67,15 @@ export function SalesInvoice() {
   const [activeQuantityRow, setActiveQuantityRow] = useState(null);
   const [showBarcodePrintModal, setShowBarcodePrintModal] = useState(false);
   const [savedInvoiceNo, setSavedInvoiceNo] = useState("");
+  const [invoiceNoPreview, setInvoiceNoPreview] = useState("");
+
+  const getVoucherType = () => {
+    if (isQuotation) return 'Customer Quotation';
+    if (isReturn) return 'Customer Sale Return';
+    if (isSalesOrder) return 'Customer Sale Order';
+    if (isCustomerChallan) return 'Delivery Challan';
+    return 'Customer Sale';
+  };
   
   // Batch Settings
   const [batchSettings, setBatchSettings] = useState({
@@ -88,6 +97,7 @@ export function SalesInvoice() {
   const [searchParams] = useSearchParams();
   const [isSaving, setIsSaving] = useState(false);
   const [editInvoiceId, setEditInvoiceId] = useState(null);
+  const [oldInvoiceNo, setOldInvoiceNo] = useState("");
 
   const loadHeldInvoice = async (id) => {
     try {
@@ -250,14 +260,16 @@ export function SalesInvoice() {
 
   const fetchData = async () => {
     try {
-      const [custRes, prodRes, unitRes] = await Promise.all([
+      const [custRes, prodRes, unitRes, voucherRes] = await Promise.all([
         apiClient.get('/customers?type=CUSTOMER'),
         apiClient.get('/products'),
-        apiClient.get('/units')
+        apiClient.get('/units'),
+        apiClient.get(`/vouchers/next-number?type=${encodeURIComponent(getVoucherType())}`)
       ]);
       if (custRes.data.success) setCustomers(custRes.data.data);
       if (prodRes.data.success) setProducts(prodRes.data.data);
       if (unitRes.data?.success) setUnits(unitRes.data.data.map(u => u.name));
+      if (voucherRes.data?.success) setInvoiceNoPreview(voucherRes.data.nextNumber);
 
       const params = new URLSearchParams(location.search);
       const invoiceId = params.get('id');
@@ -266,6 +278,7 @@ export function SalesInvoice() {
         const invRes = await apiClient.get(`/inventory/single/${invoiceId}`);
         if (invRes.data?.success) {
           const inv = invRes.data.data;
+          setOldInvoiceNo(inv.invoiceNo || "");
           setInvoiceDate(new Date(inv.date).toISOString().split('T')[0]);
           if (inv.customerId) setSelectedCustomerId(inv.customerId);
           setPaymentMode(inv.paymentMode);
@@ -871,7 +884,8 @@ export function SalesInvoice() {
     const validRows = calculatedRows.filter(r => r.productId && r.qty > 0);
 
     const payload = {
-      invoiceNo: `INV-${Date.now()}`,
+      type: isQuotation ? 'QUOTATION' : (isReturn ? 'SALES_RETURN' : (isSalesOrder ? 'SALES_ORDER' : (isCustomerChallan ? 'CHALLAN' : 'SALES'))),
+      invoiceNo: oldInvoiceNo || undefined,
       customerId: selectedCustomerId ? parseInt(selectedCustomerId) : customerInput.trim(),
       date: invoiceDate,
       paymentMode,
@@ -980,7 +994,7 @@ export function SalesInvoice() {
     if (validRows.length === 0) return alert('Please add at least one valid product.');
 
     const payload = {
-      invoiceNo: `INV-${Date.now()}`,
+      type: isQuotation ? 'QUOTATION' : (isReturn ? 'SALES_RETURN' : (isSalesOrder ? 'SALES_ORDER' : (isCustomerChallan ? 'CHALLAN' : 'SALES'))),
       customerId: selectedCustomerId ? parseInt(selectedCustomerId) : customerInput.trim(),
       date: invoiceDate,
       paymentMode,
@@ -1079,6 +1093,36 @@ export function SalesInvoice() {
       ipAddress: '192.168.1.5'
     });
     alert('Row delete logged!');
+  };
+
+  const handleGridKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      if (document.querySelector('.product-dropdown-menu') || document.querySelector('.ReactModalPortal > div')) return;
+      const rowContainer = e.target.closest('.grid.bg-white.border-b, tr');
+      if (!rowContainer) return;
+      
+      const focusables = Array.from(rowContainer.querySelectorAll('input:not([disabled]):not([type="hidden"]), select:not([disabled]), button:not([disabled]):not(.text-gray-400), [tabindex="0"]'));
+      const currentIndex = focusables.indexOf(e.target);
+      if (currentIndex > -1) {
+        e.preventDefault();
+        if (currentIndex < focusables.length - 1) {
+          focusables[currentIndex + 1].focus();
+        } else {
+          const addBtn = rowContainer.querySelector('button.text-\\[\\#28a745\\]') || rowContainer.querySelector('.lucide-plus-square')?.closest('button');
+          if (addBtn) {
+            addBtn.click();
+            setTimeout(() => {
+              const rows = document.querySelectorAll('.grid.bg-white.border-b');
+              if (rows.length > 0) {
+                const lastRow = rows[rows.length - 1];
+                const firstInput = lastRow.querySelector('input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex="0"]');
+                if (firstInput) firstInput.focus();
+              }
+            }, 100);
+          }
+        }
+      }
+    }
   };
 
   return (
@@ -1255,8 +1299,8 @@ export function SalesInvoice() {
                  <input 
                    type="text" 
                    disabled
-                   placeholder="(AUTO GENRATED)"
-                   className="w-full min-w-0 border border-gray-300 border-r-0 rounded-l-[3px] px-3 py-1 text-[13px] bg-white text-gray-400"
+                   value={editInvoiceId ? "(EDITING)" : (invoiceNoPreview || "(AUTO GENERATED)")}
+                   className="w-full min-w-0 border border-gray-300 border-r-0 rounded-l-[3px] px-3 py-1 text-[13px] bg-gray-100 text-gray-800 font-bold"
                  />
                  <button className="bg-[#4F46E5] text-white px-3 py-1 border border-[#4F46E5] rounded-r-[3px]">
                    <Search className="w-4 h-4" />
@@ -1380,9 +1424,11 @@ export function SalesInvoice() {
               ))}
             </datalist>
 
+
+
             {/* Input Rows */}
             {calculatedRows.map((row, idx) => (
-              <div key={idx} style={{ gridTemplateColumns }} className="grid bg-white border-b border-gray-200">
+              <div key={idx} style={{ gridTemplateColumns }} className="grid bg-white border-b border-gray-200" onKeyDown={handleGridKeyDown}>
                 {columnOrder.map(colId => {
                   if (!colVisible[colId]) return null;
                   switch (colId) {
@@ -2106,6 +2152,45 @@ export function SalesInvoice() {
           </div>
         </div>
       )}
+      {/* Import Invoice AI Modal */}
+      <ImportInvoiceAIModal 
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onDataExtracted={(data) => {
+          if (data.invoiceDate) {
+            try { setInvoiceDate(new Date(data.invoiceDate).toISOString().split('T')[0]); } catch(e){}
+          }
+          if (data.matchedSupplierId) {
+            setSelectedCustomerId(String(data.matchedSupplierId));
+            setCustomerInput(data.supplierName || "");
+          } else if (data.supplierName) {
+            setSelectedCustomerId("");
+            setCustomerInput(data.supplierName);
+          }
+          
+          if (data.items && data.items.length > 0) {
+            const emptyRow = { productId: "", mrp: 0, price: 0, qty: 1, freeQty: 0, disc1: 0, disc1Type: '%', disc2: 0, disc2Type: '%', amount: 0, gstRate: 0, gstAmount: 0, cgst: 0, sgst: 0, igst: 0, imei: "", ram: "", storage: "", color: "", brandName: "", taxRate: 0, hsn: "", unit: "", primaryOpeningQty: 1, pUnit: "", secOpeningQty: 0, sUnit: "", size: "" };
+            const newRows = data.items.map(item => {
+              const p = item.matchedProductId ? products.find(prod => prod.id === item.matchedProductId) : null;
+              return {
+                ...emptyRow,
+                productId: p ? p.id : "",
+                productName: item.productName || "",
+                batchNo: item.batchNo || "",
+                qty: item.quantity || 1,
+                primaryOpeningQty: item.quantity || 1,
+                pUnit: item.unit || p?.baseUnit || "",
+                price: item.purchasePrice || p?.salePrice || p?.price || 0,
+                taxRate: item.taxPercent || p?.tax || 0,
+                disc1: item.discountPercent || "",
+                amount: item.amount || 0,
+                hsn: item.hsnCode || p?.hsnCode || ""
+              };
+            });
+            setRows([...newRows, emptyRow]);
+          }
+        }}
+      />
 
       <ItemMasterModal 
         isOpen={isProductModalOpen}

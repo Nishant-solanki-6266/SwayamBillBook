@@ -36,16 +36,22 @@ export function StockAdjustmentForm() {
   const [items, setItems] = useState([
     { productId: '', name: '', currentStock: 0, actualQuantity: 0, price: 0 }
   ]);
-  const [invoiceNo, setInvoiceNo] = useState(`ADJ-${new Date().getTime()}`);
+  const [invoiceNoPreview, setInvoiceNoPreview] = useState('(AUTO GENERATED)');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [remark, setRemark] = useState('');
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await apiClient.get('/products');
-        if (res.data?.success) {
-          setProducts(res.data.data.filter(p => p.status === 'Active' || p.status === 'ACTIVE'));
+        const [prodRes, voucherRes] = await Promise.all([
+          apiClient.get('/products'),
+          apiClient.get('/vouchers/next-number?type=Stock%20Adjustment')
+        ]);
+        if (prodRes.data?.success) {
+          setProducts(prodRes.data.data.filter(p => p.status === 'Active' || p.status === 'ACTIVE'));
+        }
+        if (voucherRes.data?.success) {
+          setInvoiceNoPreview(voucherRes.data.nextNumber);
         }
       } catch (err) {
         console.error("Failed to fetch products", err);
@@ -121,7 +127,7 @@ export function StockAdjustmentForm() {
     }
 
     const payload = {
-      invoiceNo,
+      invoiceNo: invoiceNoPreview,
       date,
       remark,
       totalAmount: netProfit,
@@ -141,8 +147,13 @@ export function StockAdjustmentForm() {
       if (res.data) {
         alert("Stock adjustment saved successfully!");
         setItems([{ productId: '', name: '', currentStock: 0, actualQuantity: 0, price: 0 }]);
-        setInvoiceNo(`ADJ-${new Date().getTime()}`);
+        setInvoiceNoPreview('(AUTO GENERATED)');
         setRemark('');
+        // Refresh the next number preview
+        try {
+          const vRes = await apiClient.get('/vouchers/next-number?type=Stock%20Adjustment');
+          if (vRes.data?.success) setInvoiceNoPreview(vRes.data.nextNumber);
+        } catch(e) {}
       }
     } catch (err) {
       console.error(err);
@@ -192,13 +203,10 @@ export function StockAdjustmentForm() {
                <div className="flex-1 flex items-center">
                  <input 
                    type="text" 
-                   value={invoiceNo}
-                   onChange={(e) => setInvoiceNo(e.target.value)}
-                   className="w-full min-w-0 border border-gray-300 border-r-0 rounded-l-[3px] px-3 py-1 text-[13px] bg-white text-gray-600 outline-none focus:border-[#4F46E5]"
+                   value={invoiceNoPreview}
+                   readOnly
+                   className="w-full min-w-0 border border-gray-300 rounded-[3px] px-3 py-1 text-[13px] bg-[#f0f0ff] text-[#4F46E5] font-bold outline-none cursor-default"
                  />
-                 <button className="bg-[#4F46E5] text-white px-3 py-1 border border-[#4F46E5] rounded-r-[3px]">
-                   <Search className="w-4 h-4" />
-                 </button>
                </div>
              </div>
              <div className="flex items-center justify-end w-full sm:max-w-[320px]">

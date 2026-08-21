@@ -51,6 +51,7 @@ export function PosBilling() {
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [lastInvoiceId, setLastInvoiceId] = useState(null);
   const [lastInvoiceNo, setLastInvoiceNo] = useState('');
+  const [nextInvoicePreview, setNextInvoicePreview] = useState('');
   
   const [isBillOnHold, setIsBillOnHold] = useState(false);
   const [holdSuccessMsgs, setHoldSuccessMsgs] = useState([]);
@@ -181,18 +182,22 @@ export function PosBilling() {
 
   const fetchPOSData = async () => {
     try {
-      const prodRes = await apiClient.get('/products');
+      const [prodRes, quickRes, settingsRes, voucherRes] = await Promise.all([
+        apiClient.get('/products'),
+        apiClient.get('/pos/quick-items'),
+        apiClient.get('/settings'),
+        apiClient.get('/vouchers/next-number?type=POS%20Billing')
+      ]);
       if (prodRes.data.success) {
         const activeProducts = prodRes.data.data.filter(p => p.status === 'Active' || p.status === 'ACTIVE');
         setProducts(activeProducts);
       }
-      
-      const quickRes = await apiClient.get('/pos/quick-items');
       if (quickRes.data.success) setQuickItems(quickRes.data.data);
-
-      const settingsRes = await apiClient.get('/settings');
       if (settingsRes.data?.success && settingsRes.data.data) {
         setSettings(settingsRes.data.data);
+      }
+      if (voucherRes.data?.success) {
+        setNextInvoicePreview(voucherRes.data.nextNumber);
       }
     } catch (err) {
       console.error("Failed to load POS data:", err);
@@ -472,8 +477,13 @@ export function PosBilling() {
       if (res.data.success) {
         const invoiceData = res.data.data;
         setLastInvoiceId(invoiceData?.id || null);
-        setLastInvoiceNo(invoiceData?.invoiceNo || `POS-${Date.now()}`);
+        setLastInvoiceNo(invoiceData?.invoiceNo || '');
         setIsPrintModalOpen(true);
+        // Refresh next number preview for next bill
+        try {
+          const vRes = await apiClient.get('/vouchers/next-number?type=POS%20Billing');
+          if (vRes.data?.success) setNextInvoicePreview(vRes.data.nextNumber);
+        } catch(e) {}
         
         if (activeHoldId) {
           try {
@@ -553,7 +563,6 @@ export function PosBilling() {
     }
     
     const payload = {
-      invoiceNo: `POS-${Date.now()}`,
       customerId: customerId || null,
       date: new Date().toISOString().split('T')[0],
       paymentMode,
@@ -819,6 +828,11 @@ export function PosBilling() {
             <button onClick={handleHoldBill} className={`px-4 py-2 rounded-[4px] text-[13px] font-bold shadow-sm flex items-center gap-1.5 transition-colors ${isBillOnHold ? 'bg-[#17a2b8] hover:bg-[#138496] text-white' : 'bg-[#ffc107] hover:bg-[#e0a800] text-gray-900'}`}>
               <PauseCircle className="w-4 h-4" /> {isBillOnHold ? 'Unhold Bill' : 'Hold Bill'}
             </button>
+            {nextInvoicePreview && (
+              <span className="text-[11px] font-bold text-gray-600 bg-gray-100 border border-gray-300 px-2 py-1 rounded-[3px]">
+                Next Bill No: <span className="text-[#4F46E5]">{nextInvoicePreview}</span>
+              </span>
+            )}
           </div>
 
           {/* Cart Table */}
@@ -1168,7 +1182,7 @@ export function PosBilling() {
                </div>
                
                <div className="flex justify-between mb-2 text-[11px]">
-                 <span>Bill No: INV-{Math.floor(1000 + Math.random() * 9000)}</span>
+                 <span>Bill No: {lastInvoiceNo || 'Pending'}</span>
                  <span>Date: {new Date().toLocaleDateString()}</span>
                </div>
                <div className="flex justify-between mb-4 text-[11px]">

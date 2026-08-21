@@ -84,7 +84,8 @@ export function PurchaseInvoice() {
   });
   const [isBatchSettingsOpen, setIsBatchSettingsOpen] = useState(false);
   const [remark, setRemark] = useState("");
-  const [invoiceNo, setInvoiceNo] = useState("");
+  const [invoiceNo, setInvoiceNo] = useState(""); // used only when editing existing record
+  const [invoiceNoPreview, setInvoiceNoPreview] = useState('(AUTO GENERATED)');
   const [customerStats, setCustomerStats] = useState(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPaymentStatusModalOpen, setIsPaymentStatusModalOpen] = useState(false);
@@ -118,14 +119,17 @@ export function PurchaseInvoice() {
 
   const fetchData = async () => {
     try {
-      const [custRes, prodRes, unitRes] = await Promise.all([
+      const voucherType = isReturn ? 'Company Purchase Return' : 'Company Purchase';
+      const [custRes, prodRes, unitRes, voucherRes] = await Promise.all([
         apiClient.get('/customers?type=COMPANY'),
         apiClient.get('/products'),
-        apiClient.get('/units')
+        apiClient.get('/units'),
+        apiClient.get(`/vouchers/next-number?type=${encodeURIComponent(voucherType)}`)
       ]);
       if (custRes.data.success) setSuppliers(custRes.data.data);
       if (prodRes.data.success) setProducts(prodRes.data.data);
       if (unitRes.data?.success) setUnits(unitRes.data.data.map(u => u.name));
+      if (voucherRes.data?.success) setInvoiceNoPreview(voucherRes.data.nextNumber);
 
       const params = new URLSearchParams(location.search);
       const invoiceId = params.get('id');
@@ -639,7 +643,7 @@ export function PurchaseInvoice() {
 
   const colVisible = {
     sno: true, productCode: settings.showProductCode, brand: settings.showCompany, product: true,
-    batch: true, qty: false, primaryOpeningQty: settings.primaryOpeningQty, pUnit: settings.pUnit, secOpeningQty: settings.secOpeningQty, sUnit: settings.sUnit,
+    batch: settings.showBatchNo, qty: false, primaryOpeningQty: settings.primaryOpeningQty, pUnit: settings.pUnit, secOpeningQty: settings.secOpeningQty, sUnit: settings.sUnit,
     hsn: settings.showHSN, gst: settings.showGST, freeQty: settings.showFreeQty,
     mrp: settings.showMRP,
     salePrice: false,
@@ -693,7 +697,7 @@ export function PurchaseInvoice() {
     const validRows = calculatedRows.filter(r => r.productId && r.qty > 0);
 
     const payload = {
-      invoiceNo: invoiceNo || `PUR-${Date.now()}`,
+      invoiceNo: invoiceNo || undefined,
       date: invoiceDate,
       customerId: selectedSupplierId ? parseInt(selectedSupplierId) : supplierInput.trim(),
       paymentMode,
@@ -773,7 +777,6 @@ export function PurchaseInvoice() {
     }
 
     const payload = {
-      invoiceNo: invoiceNo || `PUR-${Date.now()}`,
       date: invoiceDate,
       customerId: selectedSupplierId ? parseInt(selectedSupplierId) : supplierInput.trim(),
       paymentMode,
@@ -844,6 +847,36 @@ export function PurchaseInvoice() {
     } catch (err) {
       alert("Failed to hold invoice.");
       console.error(err);
+    }
+  };
+
+  const handleGridKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      if (document.querySelector('.product-dropdown-menu') || document.querySelector('.ReactModalPortal > div')) return;
+      const rowContainer = e.target.closest('.grid.bg-white.border-b, tr');
+      if (!rowContainer) return;
+      
+      const focusables = Array.from(rowContainer.querySelectorAll('input:not([disabled]):not([type="hidden"]), select:not([disabled]), button:not([disabled]):not(.text-gray-400), [tabindex="0"]'));
+      const currentIndex = focusables.indexOf(e.target);
+      if (currentIndex > -1) {
+        e.preventDefault();
+        if (currentIndex < focusables.length - 1) {
+          focusables[currentIndex + 1].focus();
+        } else {
+          const addBtn = rowContainer.querySelector('button.text-\\[\\#28a745\\]') || rowContainer.querySelector('.lucide-plus-square')?.closest('button');
+          if (addBtn) {
+            addBtn.click();
+            setTimeout(() => {
+              const rows = document.querySelectorAll('.grid.bg-white.border-b');
+              if (rows.length > 0) {
+                const lastRow = rows[rows.length - 1];
+                const firstInput = lastRow.querySelector('input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex="0"]');
+                if (firstInput) firstInput.focus();
+              }
+            }, 100);
+          }
+        }
+      }
     }
   };
 
@@ -999,14 +1032,17 @@ export function PurchaseInvoice() {
           <div className="flex flex-col items-end justify-center gap-3">
              <div className="flex items-center justify-end w-full sm:max-w-[320px]">
                <label className="text-[13px] font-bold text-gray-800 w-[80px] text-right mr-2">Invoice No :</label>
-               <div className="flex-1 flex items-center">
+               <div className="flex-1 flex items-center flex-col gap-0.5">
                  <input 
                    type="text" 
                    value={invoiceNo}
                    onChange={e => setInvoiceNo(e.target.value)}
-                   placeholder="PUR-12345 (Auto)"
+                   placeholder={invoiceNoPreview}
                    className="w-full min-w-0 border border-gray-300 rounded-[3px] px-3 py-1 text-[13px] bg-white text-gray-800 font-bold"
                  />
+                 {!invoiceNo && (
+                   <span className="text-[10px] text-[#4F46E5] font-bold self-start">Auto: {invoiceNoPreview}</span>
+                 )}
                </div>
              </div>
              <div className="flex flex-col items-end w-full sm:max-w-[320px]">
@@ -1121,7 +1157,7 @@ export function PurchaseInvoice() {
             </datalist>
 
             {calculatedRows.map((row, idx) => (
-              <div key={idx} style={{ gridTemplateColumns }} className="grid bg-white border-b border-gray-200">
+              <div key={idx} style={{ gridTemplateColumns }} className="grid bg-white border-b border-gray-200" onKeyDown={handleGridKeyDown}>
                 {columnOrder.map(colId => {
                   if (!colVisible[colId]) return null;
                   switch (colId) {
@@ -1641,8 +1677,40 @@ export function PurchaseInvoice() {
       <ImportInvoiceAIModal 
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
-        onImport={(data) => {
-          setIsImportModalOpen(false);
+        onDataExtracted={(data) => {
+          if (data.invoiceNumber) setInvoiceNo(data.invoiceNumber);
+          if (data.invoiceDate) {
+            try { setInvoiceDate(new Date(data.invoiceDate).toISOString().split('T')[0]); } catch(e){}
+          }
+          if (data.matchedSupplierId) {
+            setSelectedSupplierId(String(data.matchedSupplierId));
+            setSupplierInput(data.supplierName || "");
+          } else if (data.supplierName) {
+            setSelectedSupplierId("");
+            setSupplierInput(data.supplierName);
+          }
+          
+          if (data.items && data.items.length > 0) {
+            const newRows = data.items.map(item => {
+              const p = item.matchedProductId ? products.find(prod => prod.id === item.matchedProductId) : null;
+              return {
+                ...createEmptyRow(),
+                productId: p ? p.id : "",
+                productName: item.productName || "",
+                batchNo: item.batchNo || "",
+                qty: item.quantity || 1,
+                primaryOpeningQty: item.quantity || 1,
+                pUnit: item.unit || p?.baseUnit || "",
+                price: item.purchasePrice || p?.purchasePrice || p?.price || 0,
+                taxRate: item.taxPercent || p?.tax || 0,
+                disc1: item.discountPercent || "",
+                disc1Type: '%',
+                amount: item.amount || 0,
+                hsn: item.hsnCode || p?.hsnCode || ""
+              };
+            });
+            setRows([...newRows, createEmptyRow()]);
+          }
         }}
       />
 

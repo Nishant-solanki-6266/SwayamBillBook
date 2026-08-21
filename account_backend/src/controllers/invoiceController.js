@@ -1,10 +1,20 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { getAndIncrementVoucherNumber } = require('./voucherController');
 
-// Helper to generate a simple invoice number
-const generateInvoiceNo = () => {
-  const now = new Date();
-  return `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${now.getTime()}`;
+const mapInvoiceTypeToVoucher = (type) => {
+  switch(type) {
+    case 'SALES': return 'Customer Sale';
+    case 'SALES_RETURN': return 'Customer Sale Return';
+    case 'QUOTATION': return 'Customer Quotation';
+    case 'CHALLAN': return 'Delivery Challan';
+    case 'PURCHASE_ORDER': return 'Company Purchase Order';
+    case 'SALES_ORDER': return 'Customer Sale Order';
+    case 'PURCHASE': return 'Company Purchase';
+    case 'PURCHASE_RETURN': return 'Company Purchase Return';
+    case 'ADJUSTMENT': return 'Stock Adjustment';
+    default: return 'Customer Sale';
+  }
 };
 
 /**
@@ -31,7 +41,8 @@ exports.createInvoice = async (req, res) => {
     tcsAmount,
     items,
     salesperson,
-    commission
+    commission,
+    type
   } = req.body;
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -102,7 +113,7 @@ exports.createInvoice = async (req, res) => {
 
       const invoice = await tx.invoice.create({
         data: {
-          invoiceNo: generateInvoiceNo(),
+          invoiceNo: req.body.invoiceNo || await getAndIncrementVoucherNumber(companyId, mapInvoiceTypeToVoucher(type || 'SALES'), tx),
           date: date ? new Date(date) : new Date(),
           subTotal: parseFloat(subTotal) || 0,
           totalDiscount: parseFloat(totalDiscount) || 0,
