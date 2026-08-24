@@ -837,89 +837,91 @@ export function PosBilling() {
 
           {/* Cart Table */}
           <div className="flex-1 min-h-0 relative">
-            <div className="absolute inset-0 overflow-y-scroll">
-            <div className="bg-[#343a40] text-white grid grid-cols-[50px_1fr_80px_90px_70px_100px_100px_90px_50px] text-center sticky top-0 z-10">
-              <div className="py-2 text-[12px] font-bold">S.NO</div>
-              <div className="py-2 text-[12px] font-bold text-left px-2">PRODUCT NAME</div>
-              <div className="py-2 text-[12px] font-bold">MRP</div>
-              <div className="py-2 text-[12px] font-bold">PRICE</div>
-              <div className="py-2 text-[12px] font-bold">DISC(%)</div>
-              <div className="py-2 text-[12px] font-bold">QTY</div>
-              <div className="py-2 text-[12px] font-bold">LOYALTY POINT</div>
-              <div className="py-2 text-[12px] font-bold">TOTAL</div>
-              <div className="py-2 text-[12px] font-bold">ACTION</div>
-            </div>
+            <div className="absolute inset-0 overflow-auto data-grid-scroll">
+              <div className="min-w-[800px]">
+                <div className="bg-[#343a40] text-white grid grid-cols-[50px_1fr_80px_90px_70px_100px_100px_90px_50px] text-center sticky top-0 z-10">
+                  <div className="py-2 text-[12px] font-bold">S.NO</div>
+                  <div className="py-2 text-[12px] font-bold text-left px-2">PRODUCT NAME</div>
+                  <div className="py-2 text-[12px] font-bold">MRP</div>
+                  <div className="py-2 text-[12px] font-bold">PRICE</div>
+                  <div className="py-2 text-[12px] font-bold">DISC(%)</div>
+                  <div className="py-2 text-[12px] font-bold">QTY</div>
+                  <div className="py-2 text-[12px] font-bold">LOYALTY POINT</div>
+                  <div className="py-2 text-[12px] font-bold">TOTAL</div>
+                  <div className="py-2 text-[12px] font-bold">ACTION</div>
+                </div>
 
-            {cart.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
-                <PackageSearch className="w-16 h-16 mb-2 opacity-50" />
-                <p className="text-[15px] font-medium">Cart is empty. Scan products to add.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col">
-                {cart.map((item, index) => (
-                  <div key={item.id} className="grid grid-cols-[50px_1fr_80px_90px_70px_100px_100px_90px_50px] text-center border-b border-gray-200 bg-white items-center hover:bg-gray-50">
-                    <div className="py-2 text-[13px] font-bold text-gray-600">{index + 1}</div>
-                    <div className="py-2 text-[13px] font-bold text-left px-2 text-gray-800 line-clamp-1 flex flex-col justify-center relative group">
-                      {item.name}
-                      <span className="text-[10px] font-normal text-blue-500">{item.priceReason}</span>
-                    </div>
-                    <div className="py-2 px-1">
-                      <div className="flex items-center border border-gray-300 rounded-[3px] bg-white overflow-hidden focus-within:border-[#4F46E5]">
-                        <span className="pl-1 text-gray-500 text-[12px] font-bold">₹</span>
-                        <input 
-                          type="number" 
-                          value={item.mrp === '' ? '' : (item.mrp || item.price || 0)}
-                          onChange={(e) => updateMrp(item.id, e.target.value === '' ? '' : Number(e.target.value))}
-                          className="w-full text-center outline-none py-1 text-[13px] font-bold text-gray-700"
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
-                    <div className="py-2 px-1">
-                      <div className="flex items-center border border-gray-300 rounded-[3px] bg-white overflow-hidden focus-within:border-[#4F46E5]">
-                        <span className="pl-1 text-gray-500 text-[12px] font-bold">₹</span>
-                        <input 
-                          type="number" 
-                          value={item.price === '' ? '' : item.price}
-                          onChange={(e) => updatePrice(item.id, e.target.value === '' ? '' : Number(e.target.value))}
-                          className="w-full text-center outline-none py-1 text-[13px] font-bold text-gray-700"
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
-                    <div className="py-2 px-1">
-                      <input 
-                        type="number" 
-                        value={item.discount || ''}
-                        onChange={(e) => updateDiscount(item.id, Number(e.target.value))}
-                        className="w-full text-center border border-gray-300 rounded-[3px] py-1 outline-none focus:border-[#4F46E5] text-[13px] font-bold hide-arrows"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="py-2 px-2">
-                      <div className="flex items-center border border-gray-300 rounded-[3px] bg-white overflow-hidden">
-                        <button onClick={() => updateQty(item.id, item.qty - 1)} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold">-</button>
-                        <input 
-                          type="number" 
-                          value={item.qty} 
-                          onChange={(e) => updateQty(item.id, Number(e.target.value))}
-                          className="w-full text-center outline-none text-[13px] font-bold hide-arrows" 
-                        />
-                        <button onClick={() => updateQty(item.id, item.qty + 1)} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold">+</button>
-                      </div>
-                    </div>
-                    <div className="py-2 text-[13px] font-bold text-gray-700">{(Number(item.creditSalePrice || 0)) * item.qty}</div>
-                    <div className="py-2 text-[14px] font-bold text-[#28a745]">₹{item.total.toFixed(2)}</div>
-                    <div className="py-2 flex items-center justify-center">
-                      <button onClick={() => removeItem(item.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded-full">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                {cart.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[300px] text-gray-400">
+                    <PackageSearch className="w-16 h-16 mb-2 opacity-50" />
+                    <p className="text-[15px] font-medium">Cart is empty. Scan products to add.</p>
                   </div>
-                ))}
+                ) : (
+                  <div className="flex flex-col">
+                    {cart.map((item, index) => (
+                      <div key={item.id} className="grid grid-cols-[50px_1fr_80px_90px_70px_100px_100px_90px_50px] text-center border-b border-gray-200 bg-white items-center hover:bg-gray-50">
+                        <div className="py-2 text-[13px] font-bold text-gray-600">{index + 1}</div>
+                        <div className="py-2 text-[13px] font-bold text-left px-2 text-gray-800 line-clamp-1 flex flex-col justify-center relative group">
+                          {item.name}
+                          <span className="text-[10px] font-normal text-blue-500">{item.priceReason}</span>
+                        </div>
+                        <div className="py-2 px-1">
+                          <div className="flex items-center border border-gray-300 rounded-[3px] bg-white overflow-hidden focus-within:border-[#4F46E5]">
+                            <span className="pl-1 text-gray-500 text-[12px] font-bold">₹</span>
+                            <input 
+                              type="number" 
+                              value={item.mrp === '' ? '' : (item.mrp || item.price || 0)}
+                              onChange={(e) => updateMrp(item.id, e.target.value === '' ? '' : Number(e.target.value))}
+                              className="w-full text-center outline-none py-1 text-[13px] font-bold text-gray-700"
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
+                        <div className="py-2 px-1">
+                          <div className="flex items-center border border-gray-300 rounded-[3px] bg-white overflow-hidden focus-within:border-[#4F46E5]">
+                            <span className="pl-1 text-gray-500 text-[12px] font-bold">₹</span>
+                            <input 
+                              type="number" 
+                              value={item.price === '' ? '' : item.price}
+                              onChange={(e) => updatePrice(item.id, e.target.value === '' ? '' : Number(e.target.value))}
+                              className="w-full text-center outline-none py-1 text-[13px] font-bold text-gray-700"
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
+                        <div className="py-2 px-1">
+                          <input 
+                            type="number" 
+                            value={item.discount || ''}
+                            onChange={(e) => updateDiscount(item.id, Number(e.target.value))}
+                            className="w-full text-center border border-gray-300 rounded-[3px] py-1 outline-none focus:border-[#4F46E5] text-[13px] font-bold hide-arrows"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="py-2 px-2">
+                          <div className="flex items-center border border-gray-300 rounded-[3px] bg-white overflow-hidden">
+                            <button onClick={() => updateQty(item.id, item.qty - 1)} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold">-</button>
+                            <input 
+                              type="number" 
+                              value={item.qty} 
+                              onChange={(e) => updateQty(item.id, Number(e.target.value))}
+                              className="w-full text-center outline-none text-[13px] font-bold hide-arrows" 
+                            />
+                            <button onClick={() => updateQty(item.id, item.qty + 1)} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold">+</button>
+                          </div>
+                        </div>
+                        <div className="py-2 text-[13px] font-bold text-gray-700">{(Number(item.creditSalePrice || 0)) * item.qty}</div>
+                        <div className="py-2 text-[14px] font-bold text-[#28a745]">₹{item.total.toFixed(2)}</div>
+                        <div className="py-2 flex items-center justify-center">
+                          <button onClick={() => removeItem(item.id)} className="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded-full">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
             </div>
           </div>
 

@@ -26,7 +26,7 @@ export const Register = () => {
     setError(null);
     
     try {
-      const response = await apiClient.post('/auth/register', {
+      await apiClient.post('/auth/register', {
         name,
         contactNumber,
         email,
@@ -34,13 +34,7 @@ export const Register = () => {
         companyName
       });
       
-      const { token, user } = response.data;
-      
-      // Store token and user data
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      window.location.href = '/dashboard';
+      navigate('/login');
     } catch (err) {
       console.error('Registration error:', err);
       setError(err.response?.data?.message || 'Failed to register.');

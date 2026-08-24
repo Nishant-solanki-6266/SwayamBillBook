@@ -119,7 +119,7 @@ export function ImportInvoiceAIModal({ isOpen, onClose, onDataExtracted }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-md transition-all">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[600px] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[min(96vw,600px)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
         
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-4 flex items-center justify-between relative overflow-hidden">

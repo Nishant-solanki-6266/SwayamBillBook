@@ -8,7 +8,7 @@ export function HoldInvoiceModal({ isOpen, onClose, onConfirm }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-[4px] shadow-2xl w-full sm:max-w-[400px] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="bg-white rounded-[4px] shadow-2xl w-full max-w-[min(96vw,400px)] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
         <div className="bg-[#6c757d] px-4 py-3 flex items-center justify-between">

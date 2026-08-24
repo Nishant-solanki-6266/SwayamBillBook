@@ -200,7 +200,7 @@ export function DailyCashBook() {
           <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>Period: {dateFilter} | Generated on: {now}</div>
         </div>
 
-        <div style={{ display: 'flex', gap: '15px', marginBottom: '15px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
           <div style={{ flex: 1, border: '1px solid #ddd', padding: '8px', textAlign: 'center', borderRadius: '4px' }}>
             <div style={{ fontSize: '10px', color: '#666' }}>Opening Balance</div>
             <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#4F46E5' }}>{formatAmount(openingBalance)}</div>
@@ -329,7 +329,7 @@ export function DailyCashBook() {
           </div>
 
           {/* Data Table */}
-          <div className="flex-1 overflow-auto bg-white">
+          <div className="flex-1 overflow-auto data-grid-scroll bg-white">
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead className="sticky top-0 bg-[#343a40] text-white text-[13px] z-10 shadow-sm">
                 <tr>

@@ -192,15 +192,18 @@ export function CompanyOutstanding() {
               <div className="py-12 text-center text-gray-400 text-[14px] bg-white rounded border border-gray-200">No outstanding records found.</div>
             ) : filtered.map((c, idx) => (
               <div key={c.id} className="bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start p-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start p-4 gap-3">
                   <div className="flex flex-col gap-0.5">
                     <h3 className="text-[#0d6efd] text-[15px] font-medium uppercase">{c.name}</h3>
                     <span className="text-[#0d6efd] text-[13px]">{c.mobile ? `+91 ${c.mobile}` : ''}</span>
                     <span className="text-gray-600 text-[13px] uppercase mt-0.5">{c.city}</span>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="text-[#dc3545] font-bold text-[16px]">{formatAmount(c.balance)}</span>
-                    <span className="text-gray-400 text-[12px]">{c.daysDue} days</span>
+                  <div className="flex flex-row sm:flex-col items-start sm:items-end justify-between w-full sm:w-auto gap-1 border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100">
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider sm:hidden">Due Amount</span>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[#dc3545] font-bold text-[16px]">{formatAmount(c.balance)}</span>
+                      <span className="text-gray-400 text-[12px]">{c.daysDue} days</span>
+                    </div>
                   </div>
                 </div>
                 
@@ -216,11 +219,11 @@ export function CompanyOutstanding() {
                       className="flex items-center gap-1.5 border border-[#28a745] text-[#28a745] hover:bg-green-50 px-4 py-1.5 rounded-[4px] text-[13px] font-medium transition-colors bg-white">
                       <FileText className="w-4 h-4" /> View Ledger
                     </button>
-                    {idx === 3 && ( // Just an example to match the image where some have View Unpaid Invoices
-                      <button className="flex items-center gap-1.5 border border-[#4F46E5] text-[#4F46E5] hover:bg-cyan-50 px-4 py-1.5 rounded-[4px] text-[13px] font-medium transition-colors bg-white">
-                        <ClipboardList className="w-4 h-4 fill-[#4F46E5] text-white" /> View Unpaid Invoices
-                      </button>
-                    )}
+                    <button 
+                      onClick={() => navigate('/admin/party-ledger/company_payment', { state: { company: c, openUnpaidModal: true } })}
+                      className="flex items-center gap-1.5 border border-[#4F46E5] text-[#4F46E5] hover:bg-cyan-50 px-4 py-1.5 rounded-[4px] text-[13px] font-medium transition-colors bg-white">
+                      <ClipboardList className="w-4 h-4 fill-[#4F46E5] text-white" /> View Unpaid Invoices
+                    </button>
                   </div>
                   <button 
                     onClick={() => setFollowupModal({ open: true, id: c.id })}

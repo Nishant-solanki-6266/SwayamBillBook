@@ -152,7 +152,7 @@ export function PaymentStatusModal({ isOpen, onClose, totalAmount = 0, dueAmount
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-[4px] shadow-2xl w-full max-w-[650px] flex flex-col animate-in fade-in duration-200" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-[4px] shadow-2xl w-full max-w-[min(96vw,650px)] flex flex-col animate-in fade-in duration-200" onClick={(e) => e.stopPropagation()}>
         
         {/* Header */}
         <div className="bg-[#4F46E5] px-4 py-2.5 flex items-center justify-between text-white border-b border-white/10 rounded-t-[4px]">
@@ -173,8 +173,8 @@ export function PaymentStatusModal({ isOpen, onClose, totalAmount = 0, dueAmount
           </div>
 
           {/* Table */}
-          <div className="border border-gray-300 rounded-[3px] bg-white shadow-sm flex-1">
-            <table className="w-full text-left border-collapse text-[13px]">
+          <div className="border border-gray-300 rounded-[3px] bg-white shadow-sm flex-1 overflow-x-auto">
+            <table className="w-full text-left border-collapse text-[13px] min-w-[380px]">
               <thead>
                 <tr className="bg-gray-100 border-b border-gray-300 text-gray-700 font-bold">
                   <th className="p-2 w-[40px]">#</th>

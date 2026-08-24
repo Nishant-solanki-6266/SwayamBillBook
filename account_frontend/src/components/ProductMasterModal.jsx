@@ -189,7 +189,7 @@ export function ProductMasterModal({ isOpen, onClose, onSubmit, editProduct }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-[3px] shadow-2xl w-full sm:max-w-[750px] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="bg-white rounded-[3px] shadow-2xl w-full max-w-[min(96vw,750px)] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
         <div className="bg-[#4F46E5] flex items-center justify-between">
@@ -418,113 +418,117 @@ export function ProductMasterModal({ isOpen, onClose, onSubmit, editProduct }) {
               {isProduct && toggles['Raw Materials'] && (
                 <div className="p-3 border-t border-gray-100 bg-white flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
                   {/* Table 1: Raw Material */}
-                  <div className="border border-gray-200 rounded-[3px]">
-                    <div className="grid grid-cols-[50px_1fr_200px_70px] bg-white text-center text-[12px] text-gray-600 border-b border-gray-200 divide-x divide-gray-200">
-                      <div className="p-1.5">S.NO</div>
-                      <div className="p-1.5">Raw Material</div>
-                      <div className="p-1.5">Quantity</div>
-                      <div className="p-1.5">ACTION</div>
-                    </div>
-                    {rawMaterialsList.map((rm, idx) => (
-                      <div key={idx} className="grid grid-cols-[50px_1fr_200px_70px] bg-gray-50 text-center items-center divide-x divide-gray-200 border-b border-gray-200">
-                        <div className="p-1.5 text-gray-600 text-[13px]">{idx + 1}</div>
-                        <div className="p-1.5 text-[13px] text-left px-2">{rm.name}</div>
-                        <div className="p-1.5 text-[13px] font-medium">{rm.qty} {rm.unit}</div>
+                  <div className="border border-gray-200 rounded-[3px] overflow-x-auto">
+                    <div className="min-w-[420px]">
+                      <div className="grid grid-cols-[50px_1fr_200px_70px] bg-white text-center text-[12px] text-gray-600 border-b border-gray-200 divide-x divide-gray-200">
+                        <div className="p-1.5">S.NO</div>
+                        <div className="p-1.5">Raw Material</div>
+                        <div className="p-1.5">Quantity</div>
+                        <div className="p-1.5">ACTION</div>
+                      </div>
+                      {rawMaterialsList.map((rm, idx) => (
+                        <div key={idx} className="grid grid-cols-[50px_1fr_200px_70px] bg-gray-50 text-center items-center divide-x divide-gray-200 border-b border-gray-200">
+                          <div className="p-1.5 text-gray-600 text-[13px]">{idx + 1}</div>
+                          <div className="p-1.5 text-[13px] text-left px-2">{rm.name}</div>
+                          <div className="p-1.5 text-[13px] font-medium">{rm.qty} {rm.unit}</div>
+                          <div className="p-1.5 flex justify-center">
+                            <button 
+                              onClick={(e) => { e.preventDefault(); setRawMaterialsList(prev => prev.filter((_, i) => i !== idx)); }}
+                              className="bg-[#dc3545] text-white w-6 h-6 rounded-[3px] flex items-center justify-center hover:bg-[#c82333] transition-colors"
+                            >
+                              <X className="w-4 h-4" strokeWidth={3} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="grid grid-cols-[50px_1fr_200px_70px] bg-white text-center items-center divide-x divide-gray-200">
+                        <div className="p-1.5 text-gray-600 text-[13px]">#</div>
+                        <div className="p-1.5">
+                          <input list="raw-materials" placeholder="Search or enter material..." value={rmInput.name} onChange={e => setRmInput({...rmInput, name: e.target.value})} className="w-full border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none bg-white" />
+                          <datalist id="raw-materials">
+                            {allProducts.map((p, idx) => (
+                              <option key={idx} value={p} />
+                            ))}
+                          </datalist>
+                        </div>
+                        <div className="p-1.5 flex gap-1">
+                          <input type="number" value={rmInput.qty} onChange={e => setRmInput({...rmInput, qty: parseFloat(e.target.value) || 0})} className="w-1/2 border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none text-center" />
+                          <input list="qty-units" value={rmInput.unit} onChange={e => setRmInput({...rmInput, unit: e.target.value})} className="w-1/2 border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none font-bold bg-white" />
+                          <datalist id="qty-units">
+                            {units.map((u, idx) => (
+                              <option key={idx} value={u} />
+                            ))}
+                          </datalist>
+                        </div>
                         <div className="p-1.5 flex justify-center">
                           <button 
-                            onClick={(e) => { e.preventDefault(); setRawMaterialsList(prev => prev.filter((_, i) => i !== idx)); }}
-                            className="bg-[#dc3545] text-white w-6 h-6 rounded-[3px] flex items-center justify-center hover:bg-[#c82333] transition-colors"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (rmInput.name.trim() && rmInput.qty > 0) {
+                                setRawMaterialsList(prev => [...prev, rmInput]);
+                                setRmInput({ name: '', qty: 0, unit: '' });
+                              }
+                            }}
+                            className="bg-[#28a745] text-white w-7 h-7 rounded-[3px] flex items-center justify-center hover:bg-[#218838] transition-colors"
                           >
-                            <X className="w-4 h-4" strokeWidth={3} />
+                            <Plus className="w-5 h-5" strokeWidth={4} />
                           </button>
                         </div>
-                      </div>
-                    ))}
-                    <div className="grid grid-cols-[50px_1fr_200px_70px] bg-white text-center items-center divide-x divide-gray-200">
-                      <div className="p-1.5 text-gray-600 text-[13px]">#</div>
-                      <div className="p-1.5">
-                        <input list="raw-materials" placeholder="Search or enter material..." value={rmInput.name} onChange={e => setRmInput({...rmInput, name: e.target.value})} className="w-full border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none bg-white" />
-                        <datalist id="raw-materials">
-                          {allProducts.map((p, idx) => (
-                            <option key={idx} value={p} />
-                          ))}
-                        </datalist>
-                      </div>
-                      <div className="p-1.5 flex gap-1">
-                        <input type="number" value={rmInput.qty} onChange={e => setRmInput({...rmInput, qty: parseFloat(e.target.value) || 0})} className="w-1/2 border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none text-center" />
-                        <input list="qty-units" value={rmInput.unit} onChange={e => setRmInput({...rmInput, unit: e.target.value})} className="w-1/2 border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none font-bold bg-white" />
-                        <datalist id="qty-units">
-                          {units.map((u, idx) => (
-                            <option key={idx} value={u} />
-                          ))}
-                        </datalist>
-                      </div>
-                      <div className="p-1.5 flex justify-center">
-                        <button 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (rmInput.name.trim() && rmInput.qty > 0) {
-                              setRawMaterialsList(prev => [...prev, rmInput]);
-                              setRmInput({ name: '', qty: 0, unit: '' });
-                            }
-                          }}
-                          className="bg-[#28a745] text-white w-7 h-7 rounded-[3px] flex items-center justify-center hover:bg-[#218838] transition-colors"
-                        >
-                          <Plus className="w-5 h-5" strokeWidth={4} />
-                        </button>
                       </div>
                     </div>
                   </div>
 
                   {/* Table 2: Extra Charges */}
-                  <div className="border border-gray-200 rounded-[3px]">
-                    <div className="grid grid-cols-[50px_1fr_1fr_1fr_70px] bg-white text-center text-[12px] text-gray-600 border-b border-gray-200 divide-x divide-gray-200">
-                      <div className="p-1.5">S.NO</div>
-                      <div className="p-1.5">Extra Charges</div>
-                      <div className="p-1.5">Charges Price</div>
-                      <div className="p-1.5">Unit</div>
-                      <div className="p-1.5">ACTION</div>
-                    </div>
-                    {extraChargesList.map((ec, idx) => (
-                      <div key={idx} className="grid grid-cols-[50px_1fr_1fr_1fr_70px] bg-gray-50 text-center items-center divide-x divide-gray-200 border-b border-gray-200">
-                        <div className="p-1.5 text-gray-600 text-[13px]">{idx + 1}</div>
-                        <div className="p-1.5 text-[13px] text-left px-2">{ec.name}</div>
-                        <div className="p-1.5 text-[13px]">{ec.price}</div>
-                        <div className="p-1.5 text-[13px]">{ec.unit}</div>
+                  <div className="border border-gray-200 rounded-[3px] overflow-x-auto">
+                    <div className="min-w-[420px]">
+                      <div className="grid grid-cols-[50px_1fr_1fr_1fr_70px] bg-white text-center text-[12px] text-gray-600 border-b border-gray-200 divide-x divide-gray-200">
+                        <div className="p-1.5">S.NO</div>
+                        <div className="p-1.5">Extra Charges</div>
+                        <div className="p-1.5">Charges Price</div>
+                        <div className="p-1.5">Unit</div>
+                        <div className="p-1.5">ACTION</div>
+                      </div>
+                      {extraChargesList.map((ec, idx) => (
+                        <div key={idx} className="grid grid-cols-[50px_1fr_1fr_1fr_70px] bg-gray-50 text-center items-center divide-x divide-gray-200 border-b border-gray-200">
+                          <div className="p-1.5 text-gray-600 text-[13px]">{idx + 1}</div>
+                          <div className="p-1.5 text-[13px] text-left px-2">{ec.name}</div>
+                          <div className="p-1.5 text-[13px]">{ec.price}</div>
+                          <div className="p-1.5 text-[13px]">{ec.unit}</div>
+                          <div className="p-1.5 flex justify-center">
+                            <button 
+                              onClick={(e) => { e.preventDefault(); setExtraChargesList(prev => prev.filter((_, i) => i !== idx)); }}
+                              className="bg-[#dc3545] text-white w-6 h-6 rounded-[3px] flex items-center justify-center hover:bg-[#c82333] transition-colors"
+                            >
+                              <X className="w-4 h-4" strokeWidth={3} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="grid grid-cols-[50px_1fr_1fr_1fr_70px] bg-white text-center items-center divide-x divide-gray-200">
+                        <div className="p-1.5 text-gray-600 text-[13px]">#</div>
+                        <div className="p-1.5">
+                          <input type="text" value={ecInput.name} onChange={e => setEcInput({...ecInput, name: e.target.value})} className="w-full border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none" />
+                        </div>
+                        <div className="p-1.5">
+                          <input type="number" value={ecInput.price} onChange={e => setEcInput({...ecInput, price: parseFloat(e.target.value) || 0})} className="w-full border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none text-center" />
+                        </div>
+                        <div className="p-1.5">
+                          <input list="qty-units" value={ecInput.unit} onChange={e => setEcInput({...ecInput, unit: e.target.value})} className="w-full border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none bg-white" />
+                        </div>
                         <div className="p-1.5 flex justify-center">
                           <button 
-                            onClick={(e) => { e.preventDefault(); setExtraChargesList(prev => prev.filter((_, i) => i !== idx)); }}
-                            className="bg-[#dc3545] text-white w-6 h-6 rounded-[3px] flex items-center justify-center hover:bg-[#c82333] transition-colors"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (ecInput.name.trim() || ecInput.price > 0) {
+                                setExtraChargesList(prev => [...prev, ecInput]);
+                                setEcInput({ name: '', price: 0, unit: '' });
+                              }
+                            }}
+                            className="bg-[#28a745] text-white w-7 h-7 rounded-[3px] flex items-center justify-center hover:bg-[#218838] transition-colors"
                           >
-                            <X className="w-4 h-4" strokeWidth={3} />
+                            <Plus className="w-5 h-5" strokeWidth={4} />
                           </button>
                         </div>
-                      </div>
-                    ))}
-                    <div className="grid grid-cols-[50px_1fr_1fr_1fr_70px] bg-white text-center items-center divide-x divide-gray-200">
-                      <div className="p-1.5 text-gray-600 text-[13px]">#</div>
-                      <div className="p-1.5">
-                        <input type="text" value={ecInput.name} onChange={e => setEcInput({...ecInput, name: e.target.value})} className="w-full border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none" />
-                      </div>
-                      <div className="p-1.5">
-                        <input type="number" value={ecInput.price} onChange={e => setEcInput({...ecInput, price: parseFloat(e.target.value) || 0})} className="w-full border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none text-center" />
-                      </div>
-                      <div className="p-1.5">
-                        <input list="qty-units" value={ecInput.unit} onChange={e => setEcInput({...ecInput, unit: e.target.value})} className="w-full border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none bg-white" />
-                      </div>
-                      <div className="p-1.5 flex justify-center">
-                        <button 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (ecInput.name.trim() || ecInput.price > 0) {
-                              setExtraChargesList(prev => [...prev, ecInput]);
-                              setEcInput({ name: '', price: 0, unit: '' });
-                            }
-                          }}
-                          className="bg-[#28a745] text-white w-7 h-7 rounded-[3px] flex items-center justify-center hover:bg-[#218838] transition-colors"
-                        >
-                          <Plus className="w-5 h-5" strokeWidth={4} />
-                        </button>
                       </div>
                     </div>
                   </div>

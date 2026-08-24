@@ -18,7 +18,7 @@ export function LogoutModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-[400px] shadow-xl rounded-sm overflow-hidden flex flex-col">
+      <div className="bg-white w-full max-w-[min(95vw,400px)] shadow-xl rounded-sm overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-[#4F46E5] px-4 py-3 flex items-center justify-between">
           <h2 className="text-white text-[16px] font-medium">Logged off</h2>

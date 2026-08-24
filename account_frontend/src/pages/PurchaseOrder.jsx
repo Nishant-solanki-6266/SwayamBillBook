@@ -1250,11 +1250,11 @@ export function PurchaseOrder() {
         </div>
 
 {/* Calculations and Footer Area */}
-        <div className="bg-white border-t border-gray-200 p-4 grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
+        <div className="bg-white border-t border-gray-200 p-4 grid grid-cols-1 md:grid-cols-[1fr_320px] lg:grid-cols-[1fr_350px] gap-6">
           {/* Left Side (Totals, Remark, Terms) */}
           <div className="flex flex-col gap-4">
             
-            <div className="summary-stats grid grid-cols-4 gap-2">
+            <div className="summary-stats grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div className="border border-gray-200 bg-[#f8f9fa] rounded-[3px] p-2 flex flex-col items-center justify-center text-center">
                 <span className="text-[12px] font-bold text-gray-700">Total Qty</span>
                 <span className="text-[14px] font-bold text-[#007bff]">{grandTotalQty}</span>

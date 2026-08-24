@@ -4,7 +4,7 @@ import axios from 'axios';
 const apiClient = axios.create({
   baseURL: 'http://localhost:5000/api/v1',
 
-  // baseURL: 'https://amul-account-backend-production.up.railway.app/api/v1',
+  // baseURL: 'https://amul-account-backend-production-5e4e.up.railway.app/api/v1',
 
 
   headers: {

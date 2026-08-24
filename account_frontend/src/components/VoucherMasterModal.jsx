@@ -31,7 +31,7 @@ export function VoucherMasterModal({ isOpen, onClose, onSave, editData }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-[3px] shadow-2xl w-full max-w-[450px] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="bg-white rounded-[3px] shadow-2xl w-full max-w-[min(96vw,450px)] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
         <div className="bg-[#4F46E5] flex items-center justify-between">

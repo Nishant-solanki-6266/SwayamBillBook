@@ -60,9 +60,9 @@ export function FollowupModal({ isOpen, onClose, customerId }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
       <div 
-        className="bg-white rounded-[4px] shadow-2xl flex flex-col w-full max-w-[650px] mx-4 overflow-hidden"
+        className="bg-white rounded-[4px] shadow-2xl flex flex-col w-full max-w-[min(96vw,650px)] overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <div className="bg-[#4F46E5] px-4 py-3 flex items-center justify-between">

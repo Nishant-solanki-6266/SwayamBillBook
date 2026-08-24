@@ -195,7 +195,7 @@ export function RegisterUserModal({ isOpen, onClose }) {
         className="fixed inset-0 z-[100] flex items-center justify-center p-4"
         style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
       >
-        <div className="bg-[#f0f4f8] w-full max-w-5xl rounded-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[95vh]">
+        <div className="bg-[#f0f4f8] w-full max-w-[min(96vw,1024px)] rounded-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[95vh]">
           {/* Header */}
           <div className="bg-[#4F46E5] px-5 py-3 flex justify-between items-start text-white">
             <div>
@@ -547,7 +547,7 @@ export function RegisterUserModal({ isOpen, onClose }) {
                 </div>
 
                 {/* Matrix Table */}
-                <div className="overflow-x-auto border border-gray-300 rounded-md">
+                <div className="overflow-x-auto data-grid-scroll border border-gray-300 rounded-md">
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>
                       <tr className="bg-[#343a40] text-white text-[12px]">

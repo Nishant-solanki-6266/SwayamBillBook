@@ -159,6 +159,9 @@ export function CustomerLedger() {
       setCustomerSearch(c.name || '');
       setSelectedCustomer(c);
       fetchLedger(c);
+      if (location.state?.openUnpaidModal) {
+        setShowUnpaidModal(true);
+      }
     }
   }, [location.state]);
 
@@ -230,46 +233,50 @@ export function CustomerLedger() {
   const getUnpaidBills = () => {
     if (!selectedCustomer || entries.length === 0) return [];
 
-    // 1. Get all credit invoices
-    const creditInvoices = entries
-      .filter(entry => entry.type === 'INVOICE' && entry.paymentMode === 'Credit')
-      .map(inv => ({
-        id: inv.id,
-        date: inv.date,
-        invoiceNo: inv.voucherNo,
-        billAmt: inv.amount,
-        balanceDue: inv.amount,
-        status: 'Unpaid'
-      }));
+    const unpaidList = [];
 
-    // 2. Sum up total payments received and sales returns (credits)
-    const totalPayments = entries
-      .filter(entry => entry.type === 'PAYMENT_IN' || entry.type === 'SALES_RETURN')
-      .reduce((sum, entry) => sum + (entry.paymentIn || entry.amount || 0), 0);
-
-    // 3. Allocate payments to credit invoices (FIFO)
-    let remainingCredits = totalPayments;
-    const unpaidBills = [];
-
-    for (let inv of creditInvoices) {
-      if (remainingCredits > 0) {
-        if (remainingCredits >= inv.billAmt) {
-          remainingCredits -= inv.billAmt;
-          inv.balanceDue = 0;
-          inv.status = 'Paid';
-        } else {
-          inv.balanceDue = inv.billAmt - remainingCredits;
-          remainingCredits = 0;
-          inv.status = 'Partial';
+    entries.forEach(entry => {
+      if (entry.type === 'INVOICE') {
+        const isCredit = entry.paymentMode === 'Credit' || 
+          String(entry.paymentMode || '').toLowerCase().includes('credit') ||
+          (entry.amount > (entry.paymentIn || 0));
+        
+        if (isCredit) {
+          const upfrontPaid = entry.paymentIn || 0;
+          const initialDue = Math.max(0, (entry.amount || 0) - upfrontPaid);
+          if (initialDue > 0) {
+            unpaidList.push({
+              id: entry.id,
+              rawId: entry.rawId,
+              date: entry.date,
+              invoiceNo: entry.voucherNo,
+              billAmt: entry.amount || 0,
+              balanceDue: initialDue,
+              status: upfrontPaid > 0 ? 'Partial' : 'Unpaid'
+            });
+          }
+        }
+      } else if (entry.type === 'PAYMENT_IN' || entry.type === 'SALES_RETURN') {
+        let paymentAmount = entry.paymentIn || entry.amount || 0;
+        // Allocate this payment to outstanding prior bills in chronological order
+        for (let bill of unpaidList) {
+          if (paymentAmount <= 0) break;
+          if (bill.balanceDue > 0) {
+            if (paymentAmount >= bill.balanceDue) {
+              paymentAmount -= bill.balanceDue;
+              bill.balanceDue = 0;
+              bill.status = 'Paid';
+            } else {
+              bill.balanceDue -= paymentAmount;
+              paymentAmount = 0;
+              bill.status = 'Partial';
+            }
+          }
         }
       }
-      
-      if (inv.balanceDue > 0) {
-        unpaidBills.push(inv);
-      }
-    }
+    });
 
-    return unpaidBills;
+    return unpaidList.filter(bill => bill.balanceDue > 0);
   };
 
   const handleExport = () => {

@@ -216,7 +216,7 @@ export function CashBankSummary() {
         </div>
 
         {/* Summary boxes */}
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
           {[
             { label: 'Opening Balance', value: formatAmount(accountData.openingBalance), color: '#4F46E5' },
             { label: 'Total Credit (In)', value: formatAmount(totalIn), color: '#28a745' },
@@ -387,8 +387,8 @@ export function CashBankSummary() {
           </div>
 
           {/* Table */}
-          <div className="flex-1 overflow-x-auto">
-            <table className="w-full border-collapse">
+          <div className="flex-1 overflow-x-auto data-grid-scroll">
+            <table className="w-full border-collapse min-w-[650px]">
               <thead>
                 <tr className="bg-[#343a40]">
                   <th className="border border-gray-500 text-[13px] font-bold text-white py-2 px-3 text-center w-14">S.No.</th>

@@ -123,7 +123,7 @@ export function TextileQuantityCalculatorModal({ isOpen, onClose, onSave, initia
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[8vh] bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[5px] shadow-2xl w-full max-w-[520px] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-[5px] shadow-2xl w-full max-w-[min(96vw,520px)] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="bg-[#4F46E5] px-4 py-3 flex items-center justify-between border-b border-indigo-600">

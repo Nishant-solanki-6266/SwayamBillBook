@@ -166,7 +166,7 @@ export function PurchaseSummary() {
             </div>
 
             {selectedPeriod === 'Custom Range' && (
-              <div className="flex items-end gap-2">
+              <div className="flex flex-wrap items-end gap-2">
                 <div className="flex flex-col gap-1 w-full sm:max-w-[150px]">
                   <label className="text-[13px] font-bold text-gray-800 px-1">From</label>
                   <input

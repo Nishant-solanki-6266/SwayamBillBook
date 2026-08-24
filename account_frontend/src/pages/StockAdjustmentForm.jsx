@@ -315,7 +315,7 @@ export function StockAdjustmentForm() {
         </div>
 
         {/* Calculations Area */}
-        <div className="bg-white border-t border-gray-200 p-4 grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
+        <div className="bg-white border-t border-gray-200 p-4 grid grid-cols-1 md:grid-cols-[1fr_320px] lg:grid-cols-[1fr_350px] gap-6">
           {/* Left Side (Totals, Remark, Terms) */}
           <div className="flex flex-col gap-4">
             

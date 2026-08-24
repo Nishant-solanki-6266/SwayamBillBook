@@ -201,7 +201,7 @@ export function PartyMasterModal({ isOpen, onClose, defaultType = 'COMPANY', edi
   return (
     <>
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
-        <div className="bg-white rounded-[3px] shadow-2xl w-full sm:max-w-[750px] max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="bg-white rounded-[3px] shadow-2xl w-full max-w-[min(96vw,750px)] max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
           
           {/* Header */}
           <div className="bg-[#4F46E5] flex items-center justify-between">
@@ -335,7 +335,7 @@ export function PartyMasterModal({ isOpen, onClose, defaultType = 'COMPANY', edi
                   </div>
 
                   {/* Pin Code, Gstin, Gst Applicable */}
-                  <div className="grid grid-cols-[1.2fr_2fr_1.2fr] gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-[1.2fr_2fr_1.2fr] gap-4">
                     <div className="flex flex-col gap-1">
                       <label className="text-[14px] font-bold text-gray-800">Pin Code</label>
                       <input 
@@ -376,7 +376,7 @@ export function PartyMasterModal({ isOpen, onClose, defaultType = 'COMPANY', edi
                   </div>
 
                   {/* State, Email Address, Party Type */}
-                  <div className="grid grid-cols-[1.2fr_2fr_1.2fr] gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-[1.2fr_2fr_1.2fr] gap-4">
                     <div className="flex flex-col gap-1 relative">
                       <label className="text-[14px] font-bold text-gray-800">State</label>
                       <input
@@ -424,7 +424,7 @@ export function PartyMasterModal({ isOpen, onClose, defaultType = 'COMPANY', edi
                   </div>
 
                   {/* Other Mobile No, Party Limit, Interest Rate/Month, Loyalty Points */}
-                  <div className="grid grid-cols-[1.2fr_1fr_1fr_1.2fr] gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[1.2fr_1fr_1fr_1.2fr] gap-4">
                     <div className="flex flex-col gap-1">
                       <label className="text-[14px] font-bold text-gray-800">Other Mobile No</label>
                       <input 
@@ -465,7 +465,7 @@ export function PartyMasterModal({ isOpen, onClose, defaultType = 'COMPANY', edi
                   </div>
 
                   {/* Joining Date */}
-                  <div className="grid grid-cols-[1.2fr_2fr_1.2fr] gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-[1.2fr_2fr_1.2fr] gap-4">
                     <div className="flex flex-col gap-1">
                       <label className="text-[14px] font-bold text-gray-800">Joining Date</label>
                       <div className="relative">

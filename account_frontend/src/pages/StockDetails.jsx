@@ -661,84 +661,105 @@ export function StockDetails() {
 
       {/* View Modal */}
       {viewModalData && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-[3px] shadow-xl w-full max-w-[500px] overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="bg-[#4F46E5] px-4 py-2.5 flex justify-between items-center">
-              <h3 className="text-white font-medium text-[15px]">Stock Quantity Price-wise Details</h3>
-              <button onClick={() => setViewModalData(null)} className="text-[#dc3545] hover:text-red-600 transition-colors drop-shadow-sm">
-                <X className="w-6 h-6" strokeWidth={3} />
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4">
+          <div className="bg-white rounded-[6px] shadow-2xl w-full max-w-[540px] max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Header */}
+            <div className="bg-[#4F46E5] px-4 py-2.5 flex justify-between items-center shrink-0">
+              <h3 className="text-white font-medium text-[14px] sm:text-[15px] truncate pr-2">
+                Stock Quantity Price-wise Details
+              </h3>
+              <button 
+                onClick={() => setViewModalData(null)} 
+                className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-1 rounded transition-colors"
+                title="Close"
+              >
+                <X className="w-4 h-4" strokeWidth={2.5} />
               </button>
             </div>
             
-            <div className="p-4 bg-white">
-              {/* Total Qty Section */}
-              <div className="flex justify-between mb-4 mt-2 px-2 border-b border-gray-100 pb-2">
-                <div className="text-[13px] text-gray-700">
-                  Total Purchased: <span className="font-bold text-gray-900">{isLoadingAvgPrice ? '...' : totalPurchaseQty} {viewModalData.baseUnit?.toLowerCase()}</span>
+            {/* Scrollable Body */}
+            <div className="p-3 sm:p-4 bg-white overflow-y-auto flex-1 text-gray-800">
+              {/* Product Name & Total Qty Section */}
+              <div className="mb-3 px-1 border-b border-gray-100 pb-2">
+                <div className="font-semibold text-gray-900 text-[13px] sm:text-[14px] mb-1 truncate">
+                  {viewModalData.name} {viewModalData.sku ? `(${viewModalData.sku})` : ''}
                 </div>
-                <div className="text-[13px] text-gray-700">
-                  Total Sold: <span className="font-bold text-gray-900">{isLoadingAvgPrice ? '...' : totalSaleQty} {viewModalData.baseUnit?.toLowerCase()}</span>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[12px] sm:text-[13px] text-gray-600">
+                  <div>
+                    Total Purchased: <span className="font-bold text-gray-900">{isLoadingAvgPrice ? '...' : totalPurchaseQty} {viewModalData.baseUnit?.toLowerCase() || ''}</span>
+                  </div>
+                  <div>
+                    Total Sold: <span className="font-bold text-gray-900">{isLoadingAvgPrice ? '...' : totalSaleQty} {viewModalData.baseUnit?.toLowerCase() || ''}</span>
+                  </div>
                 </div>
               </div>
 
-              <table className="w-full border-collapse border border-gray-200 text-center mb-4">
-                <thead>
-                  <tr className="bg-white border-b border-gray-200">
-                    <th className="py-2 px-3 text-gray-800 text-[14px] font-bold border-r border-gray-200">Stock Details</th>
-                    <th className="py-2 px-3 text-gray-800 text-[14px] font-bold border-r border-gray-200">Stock Price</th>
-                    <th className="py-2 px-3 text-gray-800 text-[14px] font-bold">Stock</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {priceWiseStock && priceWiseStock.length > 0 ? (
-                    priceWiseStock.map((batch, idx) => (
-                      <tr key={idx} className="border-b border-gray-200">
-                        <td className="py-2.5 px-3 text-gray-700 text-[14px] border-r border-gray-200">
-                          {batch.qty} {viewModalData.baseUnit?.toLowerCase()} @ {Number(batch.price).toFixed(2)} {batch.isOpening ? '(Opening)' : ''}
+              {/* Table */}
+              <div className="overflow-x-auto border border-gray-200 rounded-[4px] mb-3">
+                <table className="w-full border-collapse text-center">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200 text-gray-700 text-[12px] sm:text-[13px] font-semibold">
+                      <th className="py-2 px-2.5 text-left border-r border-gray-200">Stock Details</th>
+                      <th className="py-2 px-2.5 text-right border-r border-gray-200">Stock Price</th>
+                      <th className="py-2 px-2.5 text-center w-[90px]">Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 text-[12px] sm:text-[13px]">
+                    {priceWiseStock && priceWiseStock.length > 0 ? (
+                      priceWiseStock.map((batch, idx) => (
+                        <tr key={idx} className="hover:bg-gray-50/50">
+                          <td className="py-2 px-2.5 text-left text-gray-700 border-r border-gray-200 font-medium">
+                            {batch.qty} {viewModalData.baseUnit?.toLowerCase() || ''} @ {Number(batch.price).toFixed(2)} {batch.isOpening ? '(Opening)' : ''}
+                          </td>
+                          <td className="py-2 px-2.5 text-right text-gray-700 border-r border-gray-200">
+                            {formatAmount(batch.amount).replace('₹', '')}
+                          </td>
+                          <td className="py-2 px-2.5 text-center">
+                            <span className="inline-block bg-[#28a745] text-white text-[10px] font-bold py-0.5 px-2 rounded shadow-xs">
+                              IN STOCK
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="py-2 px-2.5 text-left text-gray-700 border-r border-gray-200 font-medium">
+                          {viewModalData.stock} {viewModalData.baseUnit?.toLowerCase() || ''} @ {isLoadingAvgPrice ? '...' : Number(averagePrice || viewModalData.price || 0).toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-gray-700 text-[14px] border-r border-gray-200">
-                          {formatAmount(batch.amount).replace('₹', '')}
+                        <td className="py-2 px-2.5 text-right text-gray-700 border-r border-gray-200">
+                          {isLoadingAvgPrice ? '...' : formatAmount(viewModalData.stock * (averagePrice || viewModalData.price || 0)).replace('₹', '')}
                         </td>
-                        <td className="py-2.5 px-3">
-                          <div className={`bg-[#28a745] text-white text-[10px] font-bold py-1 px-2 rounded-[2px] w-[90%] mx-auto shadow-sm`}>
-                            IN STOCK
-                          </div>
+                        <td className="py-2 px-2.5 text-center">
+                          <span className={`inline-block ${viewModalData.stock > 0 ? 'bg-[#28a745]' : 'bg-[#dc3545]'} text-white text-[10px] font-bold py-0.5 px-2 rounded shadow-xs`}>
+                            {viewModalData.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK'}
+                          </span>
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr className="border-b border-gray-200">
-                      <td className="py-2.5 px-3 text-gray-700 text-[14px] border-r border-gray-200">
-                        {viewModalData.stock} {viewModalData.baseUnit?.toLowerCase()} @ {isLoadingAvgPrice ? '...' : Number(averagePrice || viewModalData.price || 0).toFixed(2)}
-                      </td>
-                      <td className="py-2.5 px-3 text-gray-700 text-[14px] border-r border-gray-200">
-                        {isLoadingAvgPrice ? '...' : formatAmount(viewModalData.stock * (averagePrice || viewModalData.price || 0)).replace('₹', '')}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <div className={`${viewModalData.stock > 0 ? 'bg-[#28a745]' : 'bg-[#dc3545]'} text-white text-[10px] font-bold py-1 px-2 rounded-[2px] w-[90%] mx-auto shadow-sm`}>
-                          {viewModalData.stock > 0 ? 'IN STOCK' : 'OUT OF STOCK'}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-              <div className="flex justify-center gap-4 mb-4">
-                <div className="bg-[#17a2b8] text-white px-3 py-1.5 rounded-[4px] font-bold text-[14px] shadow-sm">
+              {/* Price Badges */}
+              <div className="flex flex-wrap justify-center items-center gap-2 pt-1">
+                <div className="bg-[#17a2b8] text-white px-2.5 py-1 rounded-[4px] font-bold text-[11px] sm:text-[12px] shadow-xs">
                   {isLoadingAvgPrice ? 'Calculating...' : `Total Avg Price: ${Number(totalAveragePrice || viewModalData.purchasePrice || 0).toFixed(2)}`}
                 </div>
-                <div className="bg-[#007bff] text-white px-3 py-1.5 rounded-[4px] font-bold text-[14px] shadow-sm">
+                <div className="bg-[#007bff] text-white px-2.5 py-1 rounded-[4px] font-bold text-[11px] sm:text-[12px] shadow-xs">
                   {isLoadingAvgPrice ? 'Calculating...' : `Avg Purchase Price: ${Number(averagePrice || viewModalData.purchasePrice || 0).toFixed(2)}`}
                 </div>
-                <div className="bg-[#28a745] text-white px-3 py-1.5 rounded-[4px] font-bold text-[14px] shadow-sm">
+                <div className="bg-[#28a745] text-white px-2.5 py-1 rounded-[4px] font-bold text-[11px] sm:text-[12px] shadow-xs">
                   {isLoadingAvgPrice ? 'Calculating...' : `Avg Sale Price: ${Number(averageSalePrice || viewModalData.price || 0).toFixed(2)}`}
                 </div>
               </div>
             </div>
             
-            <div className="bg-white px-4 py-3 flex justify-end border-t border-gray-200">
-              <button onClick={() => setViewModalData(null)} className="bg-[#dc3545] text-white px-4 py-1.5 rounded-[3px] text-[14px] font-medium transition-colors hover:bg-[#c82333]">
+            {/* Footer */}
+            <div className="bg-gray-50 px-4 py-2.5 flex justify-end border-t border-gray-200 shrink-0">
+              <button 
+                onClick={() => setViewModalData(null)} 
+                className="bg-[#dc3545] text-white px-4 py-1.5 rounded-[3px] text-[13px] font-medium transition-colors hover:bg-[#c82333]"
+              >
                 Close
               </button>
             </div>

@@ -189,7 +189,7 @@ export default function PageSettingModal({ isOpen, onClose, defaultLabel = "50mm
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-[4px] w-full max-w-[800px] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh]">
+      <div className="bg-white rounded-[4px] w-full max-w-[min(96vw,800px)] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh]">
         
         {/* Header */}
         <div className="bg-[#007bff] px-4 py-3 flex items-center justify-between rounded-t-[4px] shrink-0">

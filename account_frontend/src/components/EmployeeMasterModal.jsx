@@ -166,7 +166,7 @@ export function EmployeeMasterModal({ isOpen, onClose, employee }) {
             </div>
 
             {/* Row 3: Joining Date, Designation, Salary */}
-            <div className="grid grid-cols-[1fr_1.5fr_1fr] gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.5fr_1fr] gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-[14px] font-bold text-gray-800">Joining Date</label>
                 <div className="relative">
@@ -200,7 +200,7 @@ export function EmployeeMasterModal({ isOpen, onClose, employee }) {
             </div>
 
             {/* Row 4: Opening Balance */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-[14px] font-bold text-gray-800">Opening Balance</label>
                 <input 
@@ -224,7 +224,7 @@ export function EmployeeMasterModal({ isOpen, onClose, employee }) {
             </div>
 
             {/* Row 5: Paid Holiday, Commission, Special Commission */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-[14px] font-bold text-gray-800">Paid Holiday</label>
                 <input 
@@ -255,7 +255,7 @@ export function EmployeeMasterModal({ isOpen, onClose, employee }) {
             </div>
 
             {/* Row 5: Total Sale Commission, Commission on Manufacturing */}
-            <div className="grid grid-cols-[1fr_1fr_1fr] gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr] gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-[14px] font-bold text-gray-800">Total Sale Commission</label>
                 <input 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import apiClient from '../api/apiClient';
-import { X, Printer, Calendar, Paperclip, PlusSquare, Filter, FileDown, Search, ChevronDown, ChevronUp, Edit2, Trash2 } from 'lucide-react';
+import { X, Printer, Calendar, Paperclip, PlusSquare, Filter, FileDown, Search, ChevronDown, ChevronUp, Edit2, Trash2, FileText } from 'lucide-react';
 import { cn } from '../utils';
 import { useSettings } from '../context/SettingsContext';
 
@@ -14,6 +14,7 @@ export function CompanyLedger() {
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [showFilter, setShowFilter] = useState(true);
+  const [showUnpaidModal, setShowUnpaidModal] = useState(false);
 
   const formatDateMMM = (dateStr) => {
     if (!dateStr) return '';
@@ -91,6 +92,9 @@ export function CompanyLedger() {
     fetchBanks();
     if (location.state?.company) {
       handleSelectCompany(location.state.company);
+      if (location.state?.openUnpaidModal) {
+        setShowUnpaidModal(true);
+      }
       // Optional: clear state so refresh doesn't keep it
       window.history.replaceState({}, document.title);
     }
@@ -193,6 +197,55 @@ export function CompanyLedger() {
     alert(`Editing details for ${name}`);
   };
 
+  const getUnpaidBills = () => {
+    if (!selectedCompany || entries.length === 0) return [];
+
+    const unpaidList = [];
+
+    entries.forEach(entry => {
+      if (entry.type === 'INVOICE') {
+        const isCredit = entry.paymentMode === 'Credit' || 
+          String(entry.paymentMode || '').toLowerCase().includes('credit') ||
+          (entry.amount > (entry.paymentIn || 0));
+        
+        if (isCredit) {
+          const upfrontPaid = entry.paymentIn || 0;
+          const initialDue = Math.max(0, (entry.amount || 0) - upfrontPaid);
+          if (initialDue > 0) {
+            unpaidList.push({
+              id: entry.id,
+              rawId: entry.rawId,
+              date: entry.date,
+              invoiceNo: entry.voucherNo,
+              billAmt: entry.amount || 0,
+              balanceDue: initialDue,
+              status: upfrontPaid > 0 ? 'Partial' : 'Unpaid'
+            });
+          }
+        }
+      } else if (entry.type === 'PAYMENT_OUT' || entry.type === 'PURCHASE_RETURN' || (entry.type === 'PAYMENT_IN' && entry.paymentIn > 0)) {
+        let paymentAmount = entry.paymentIn || entry.amount || 0;
+        // Allocate this payment to outstanding prior bills in chronological order
+        for (let bill of unpaidList) {
+          if (paymentAmount <= 0) break;
+          if (bill.balanceDue > 0) {
+            if (paymentAmount >= bill.balanceDue) {
+              paymentAmount -= bill.balanceDue;
+              bill.balanceDue = 0;
+              bill.status = 'Paid';
+            } else {
+              bill.balanceDue -= paymentAmount;
+              paymentAmount = 0;
+              bill.status = 'Partial';
+            }
+          }
+        }
+      }
+    });
+
+    return unpaidList.filter(bill => bill.balanceDue > 0);
+  };
+
   const handleExport = () => {
     const headers = ['#', 'Date', 'Other Information', 'Voucher No', 'Bill Amount', 'Payment Out', 'Dis.', 'Balance'];
     const csvRows = [headers.join(',')];
@@ -282,23 +335,39 @@ export function CompanyLedger() {
                  <span className="text-[13px] font-bold text-[#dc3545]">Account Balance : ₹{(selectedCompany?.balance || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
                </div>
                <div className="relative" ref={dropdownRef}>
-                 <div className="relative flex items-center cursor-pointer" onClick={() => setIsDropdownOpen(true)}>
-                   <input 
-                     type="text"
-                     value={companySearch}
-                     onChange={(e) => {
-                       setCompanySearch(e.target.value);
-                       setIsDropdownOpen(true);
-                     }}
-                     onKeyDown={handleKeyDown}
-                     placeholder="Select Name"
-                     className="w-full bg-[#add8e6] border border-[#add8e6] text-[#0056b3] placeholder-[#0056b3] rounded-[3px] px-3 py-1.5 pr-10 text-[14px] outline-none font-medium cursor-pointer"
-                   />
-                   <div className="absolute right-2 flex items-center gap-1.5 text-gray-400">
-                     <X className="w-3 h-3 hover:text-gray-600 cursor-pointer" onClick={(e) => { e.stopPropagation(); setCompanySearch(''); setSelectedCompany(null); setEntries([]); }} />
-                     {isDropdownOpen ? <ChevronUp className="w-4 h-4 cursor-pointer hover:text-gray-600" /> : <ChevronDown className="w-4 h-4 cursor-pointer hover:text-gray-600" />}
-                   </div>
-                 </div>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1 flex items-center cursor-pointer" onClick={() => setIsDropdownOpen(true)}>
+                      <input 
+                        type="text"
+                        value={companySearch}
+                        onChange={(e) => {
+                          setCompanySearch(e.target.value);
+                          setIsDropdownOpen(true);
+                        }}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Select Name"
+                        className="w-full bg-[#add8e6] border border-[#add8e6] text-[#0056b3] placeholder-[#0056b3] rounded-[3px] px-3 py-1.5 pr-10 text-[14px] outline-none font-medium cursor-pointer"
+                      />
+                      <div className="absolute right-2 flex items-center gap-1.5 text-gray-400">
+                        <X className="w-3 h-3 hover:text-gray-600 cursor-pointer" onClick={(e) => { e.stopPropagation(); setCompanySearch(''); setSelectedCompany(null); setEntries([]); }} />
+                        {isDropdownOpen ? <ChevronUp className="w-4 h-4 cursor-pointer hover:text-gray-600" /> : <ChevronDown className="w-4 h-4 cursor-pointer hover:text-gray-600" />}
+                      </div>
+                    </div>
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if (!selectedCompany) {
+                          alert("Please select a company first");
+                          return;
+                        }
+                        setShowUnpaidModal(true); 
+                      }}
+                      className="flex items-center gap-1.5 border border-[#17a2b8] text-[#17a2b8] hover:bg-[#17a2b8] hover:text-white px-3 py-1.5 rounded-[3px] text-[13px] font-medium transition-colors bg-white whitespace-nowrap h-[34px] shadow-sm"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Unpaid Bills
+                    </button>
+                  </div>
                  
                  {isDropdownOpen && (
                    <div ref={listRef} className="absolute top-full left-0 w-full mt-0.5 bg-white border border-gray-300 rounded-[3px] shadow-xl z-50 max-h-[300px] overflow-y-auto">
@@ -457,6 +526,118 @@ export function CompanyLedger() {
         </div>
 
       </div>
+
+      {showUnpaidModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[4px] shadow-2xl w-full max-w-[800px] mx-4 overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="bg-[#4F46E5] px-4 py-3 flex items-center justify-between">
+              <h3 className="text-white font-medium text-[16px]">Unpaid Bills</h3>
+              <button 
+                onClick={() => setShowUnpaidModal(false)} 
+                className="text-white hover:text-gray-200 transition-colors"
+              >
+                <X className="w-5 h-5 font-bold" strokeWidth={2.5} />
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-5 flex flex-col gap-4">
+              {/* Company Title & Summary */}
+              <div className="flex flex-col gap-0.5">
+                <h2 className="text-[#333333] text-[20px] font-bold uppercase tracking-wide">
+                  {selectedCompany?.name}
+                </h2>
+                <div className="flex items-center gap-2 text-[13px] text-gray-500 font-semibold uppercase mt-1">
+                  <span>Bills</span>
+                  <span className="text-[#333333] font-bold">{getUnpaidBills().length}</span>
+                  <span className="ml-4">Total Due</span>
+                  <span className="text-[#dc3545] font-bold">
+                    ₹{getUnpaidBills().reduce((sum, bill) => sum + bill.balanceDue, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="border border-gray-200 rounded-[3px] overflow-hidden max-h-[350px] overflow-y-auto">
+                <table className="w-full text-left border-collapse text-[13px]">
+                  <thead className="bg-[#f8f9fa] sticky top-0 border-b border-gray-200">
+                    <tr className="text-gray-600 font-bold">
+                      <th className="py-2.5 px-3 border-r border-gray-200 text-center w-[50px]">#</th>
+                      <th className="py-2.5 px-3 border-r border-gray-200">DATE</th>
+                      <th className="py-2.5 px-3 border-r border-gray-200">INVOICE NO</th>
+                      <th className="py-2.5 px-3 border-r border-gray-200 text-right">BILL AMT</th>
+                      <th className="py-2.5 px-3 border-r border-gray-200 text-right">BALANCE DUE</th>
+                      <th className="py-2.5 px-3 text-center w-[120px]">STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getUnpaidBills().length > 0 ? (
+                      getUnpaidBills().map((bill, index) => (
+                        <tr key={bill.id} className="border-b border-gray-200 hover:bg-gray-50">
+                          <td className="py-2.5 px-3 border-r border-gray-200 text-center text-gray-500 font-medium">
+                            {index + 1}
+                          </td>
+                          <td className="py-2.5 px-3 border-r border-gray-200 text-gray-700">
+                            {formatDateMMM(bill.date).replace(/-/g, ' ')}
+                          </td>
+                          <td className="py-2.5 px-3 border-r border-gray-200 font-semibold text-[#0056b3]">
+                            {bill.invoiceNo}
+                          </td>
+                          <td className="py-2.5 px-3 border-r border-gray-200 text-right font-medium text-gray-800">
+                            ₹{bill.billAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-2.5 px-3 border-r border-gray-200 text-right font-bold text-gray-800">
+                            ₹{bill.balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <span className={`px-2 py-0.5 rounded-[3px] text-[11px] font-bold inline-block shadow-sm ${
+                              bill.status === 'Partial' 
+                                ? 'bg-[#ffc107] text-gray-900' 
+                                : 'bg-[#dc3545] text-white'
+                            }`}>
+                              {bill.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="6" className="py-8 text-center text-gray-500 bg-[#f8f9fa] font-medium">
+                          No unpaid bills found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                  {getUnpaidBills().length > 0 && (
+                    <tfoot className="bg-[#e9ecef] font-bold text-gray-800 border-t border-gray-300">
+                      <tr>
+                        <td colSpan="4" className="py-2.5 px-3 text-right border-r border-gray-200">
+                          Total
+                        </td>
+                        <td className="py-2.5 px-3 text-right border-r border-gray-200 font-extrabold text-[#4F46E5]">
+                          ₹{getUnpaidBills().reduce((sum, bill) => sum + bill.balanceDue, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="bg-gray-50 px-5 py-3 border-t border-gray-200 flex justify-end">
+              <button 
+                onClick={() => setShowUnpaidModal(false)}
+                className="bg-[#4F46E5] hover:bg-indigo-700 text-white px-5 py-1.5 rounded-[4px] text-[13px] font-medium transition-colors shadow-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
