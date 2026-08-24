@@ -96,6 +96,7 @@ import { Register } from './pages/Register';
 import { BankStatementImport } from './pages/BankStatementImport';
 import { LandingPage } from './pages/LandingPage';
 import { PublicBillPage } from './pages/PublicBillPage';
+import { PublicProductPage } from './pages/PublicProductPage';
 import { ViewUser } from './pages/ViewUser';
 import { ProfilePage } from './pages/ProfilePage';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -110,8 +111,9 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          {/* Public Bill Page - no login required */}
+          {/* Public Bill & Product Pages - no login required */}
           <Route path="/bill/:invoiceNo" element={<PublicBillPage />} />
+          <Route path="/product/:identifier" element={<PublicProductPage />} />
 
           {/* Superadmin Routes */}
           <Route path="/superadmin/*" element={

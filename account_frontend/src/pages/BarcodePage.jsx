@@ -1560,9 +1560,9 @@ export function BarcodePage() {
                   <>
                     {(!tmplElements || tmplElements.length === 0) ? (
                       <QRCodeSVG
-                        value={String(item.barcode || item.id || '12345').trim()}
+                        value={`${window.location.origin}/product/${encodeURIComponent(item.barcode || fullProd?.barcode || item.productId || item.id || '12345')}`}
                         size={68}
-                        level="H"
+                        level="M"
                         fgColor="#000000"
                         bgColor="#ffffff"
                         includeMargin={false}
@@ -1579,9 +1579,9 @@ export function BarcodePage() {
                       />
                     ) : tmplElements?.some(el => el.type === 'qrcode') ? (
                       <QRCodeSVG
-                        value={String(item.barcode || item.id || '12345').trim()}
+                        value={`${window.location.origin}/product/${encodeURIComponent(item.barcode || fullProd?.barcode || item.productId || item.id || '12345')}`}
                         size={68}
-                        level="H"
+                        level="M"
                         fgColor="#000000"
                         bgColor="#ffffff"
                         includeMargin={false}
