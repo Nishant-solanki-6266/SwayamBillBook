@@ -27,6 +27,7 @@ export function PosBilling() {
   
   // States
   const [settings, setSettings] = useState(null);
+  const [companyProfile, setCompanyProfile] = useState(null);
   const [barcodeInput, setBarcodeInput] = useState('');
   const [productSuggestions, setProductSuggestions] = useState([]);
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
@@ -182,11 +183,12 @@ export function PosBilling() {
 
   const fetchPOSData = async () => {
     try {
-      const [prodRes, quickRes, settingsRes, voucherRes] = await Promise.all([
+      const [prodRes, quickRes, settingsRes, voucherRes, meRes] = await Promise.all([
         apiClient.get('/products'),
         apiClient.get('/pos/quick-items'),
         apiClient.get('/settings'),
-        apiClient.get('/vouchers/next-number?type=POS%20Billing')
+        apiClient.get('/vouchers/next-number?type=POS%20Billing'),
+        apiClient.get('/auth/me').catch(() => ({ data: { success: false } }))
       ]);
       if (prodRes.data.success) {
         const activeProducts = prodRes.data.data.filter(p => p.status === 'Active' || p.status === 'ACTIVE');
@@ -199,6 +201,9 @@ export function PosBilling() {
       if (voucherRes.data?.success) {
         setNextInvoicePreview(voucherRes.data.nextNumber);
       }
+      if (meRes.data?.success && meRes.data.data?.company) {
+        setCompanyProfile(meRes.data.data.company);
+      }
     } catch (err) {
       console.error("Failed to load POS data:", err);
     }
@@ -207,6 +212,16 @@ export function PosBilling() {
   useEffect(() => {
     fetchPOSData();
   }, []);
+
+  useEffect(() => {
+    if (isPrintModalOpen) {
+      apiClient.get('/settings').then(res => {
+        if (res.data?.success && res.data.data) {
+          setSettings(res.data.data);
+        }
+      }).catch(() => {});
+    }
+  }, [isPrintModalOpen]);
 
   // Dynamic Price Calculation from Item Master
   const calculateItemPrice = (product, currentQty, currentPaymentMode, wholesaleStatus) => {
@@ -1150,126 +1165,193 @@ export function PosBilling() {
       </div>
 
       {/* Thermal Print Modal */}
-      {isPrintModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
-          <div className="bg-white rounded-[8px] w-[350px] shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="bg-gray-100 p-3 flex items-center justify-between rounded-t-[8px] border-b border-gray-200">
-              <h3 className="font-bold text-gray-800 text-[14px] flex items-center gap-2">
-                <Printer className="w-4 h-4" /> Thermal Receipt (3-inch)
-              </h3>
-              <button onClick={() => {
-                setIsPrintModalOpen(false);
-                setCart([]); // Clear cart after print
-                setCustomerName('');
-                setCustomerId(null);
-                setCustomerPoints(0);
-                setRedeemedPoints(0);
-                setUseEarnedPoints(false);
-                setPaymentMode('Cash');
-                setBillDiscount(0);
-                setSelectedOffer(null);
-                setSplitAmounts({ Cash: '', Card: '', UPI: '', Credit: '' });
-              }} className="text-gray-500 hover:text-red-500">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto font-mono text-[12px] bg-white text-black print-receipt">
-               <div className="text-center mb-4 border-b-2 border-dashed border-gray-300 pb-4">
-                 <h2 className="text-[18px] font-bold uppercase tracking-widest">SWAYAM BILL BOOK RETAIL</h2>
+      {isPrintModalOpen && (() => {
+        const allPrint = settings?.printSettings || {};
+        const posPageSize = allPrint['POS Billing']?.pageSize || allPrint['Thermal Print']?.pageSize || allPrint['Income Transaction']?.pageSize || allPrint.pageSize || '3inch';
+        const posPrintConfig = allPrint['POS Billing'] || allPrint['Thermal Print'] || allPrint['Income Transaction'] || {};
+        const posWidthMm = posPageSize === '2inch' ? '58mm' : posPageSize === '4inch' ? '102mm' : '80mm';
+        const posPageSizeLabel = posPageSize === '2inch' ? '2-inch (58mm)' : posPageSize === '4inch' ? '4-inch (102mm)' : '3-inch (80mm)';
+        const modalBoxWidth = posPageSize === '2inch' ? 'w-[300px]' : posPageSize === '4inch' ? 'w-[420px]' : 'w-[350px]';
+        const posCustomization = posPrintConfig.customization || {};
+        const posHeaderSettings = posPrintConfig.headerSettings || {};
+        const posFooterSettings = posPrintConfig.footerSettings || {};
 
-                 <p className="text-[11px] mt-1">123, Main Market Road, City Center</p>
-                 <p className="text-[11px]">GSTIN: 07AABCU9603R1ZN</p>
-                 <p className="text-[11px]">Ph: +91 9876543210</p>
-               </div>
-               
-               <div className="flex justify-between mb-2 text-[11px]">
-                 <span>Bill No: {lastInvoiceNo || 'Pending'}</span>
-                 <span>Date: {new Date().toLocaleDateString()}</span>
-               </div>
-               <div className="flex justify-between mb-4 text-[11px]">
-                 <span>Customer: {customerName || 'Cash'}</span>
-                 <span>Mode: {paymentMode}</span>
-               </div>
-               
-               <table className="w-full mb-4 border-b-2 border-dashed border-gray-300 pb-2">
-                 <thead>
-                   <tr className="border-y border-dashed border-gray-300">
-                     <th className="text-left py-1 w-[50%]">Item</th>
-                     <th className="text-center py-1">Qty</th>
-                     <th className="text-right py-1">Amount</th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                    {cart.map((item, idx) => (
-                      <tr key={idx}>
-                        <td className="py-1">
-                          <span className="block line-clamp-1">{item.name}</span>
-                        </td>
-                        <td className="text-center py-1">{item.qty}</td>
-                        <td className="text-right py-1">{item.total.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                 </tbody>
-               </table>
-               
-               <div className="flex justify-between mb-1">
-                 <span>Subtotal:</span>
-                 <span>{subtotal.toFixed(2)}</span>
-               </div>
-               <div className="flex justify-between mb-2">
-                 <span>Includes Tax:</span>
-                 <span>{totalTax.toFixed(2)}</span>
-               </div>
-               {billDiscount > 0 && (
-                 <div className="flex justify-between mb-1 text-gray-700">
-                   <span>Bill Discount ({billDiscount}%):</span>
-                   <span>-₹{discountAmount.toFixed(2)}</span>
-                 </div>
-               )}
-               
-               {typeof offerDiscountAmount !== 'undefined' && offerDiscountAmount > 0 && (
-                 <div className="flex justify-between mb-1 text-gray-700">
-                   <span>Offer ({selectedOffer?.name || 'Applied'}):</span>
-                   <span>-₹{offerDiscountAmount.toFixed(2)}</span>
-                 </div>
-               )}
+        return (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
+            <div className={`bg-white rounded-[8px] ${modalBoxWidth} shadow-2xl flex flex-col max-h-[90vh]`}>
+              <div className="bg-gray-100 p-3 flex items-center justify-between rounded-t-[8px] border-b border-gray-200">
+                <h3 className="font-bold text-gray-800 text-[14px] flex items-center gap-2">
+                  <Printer className="w-4 h-4" /> Thermal Receipt ({posPageSizeLabel})
+                </h3>
+                <button onClick={() => {
+                  setIsPrintModalOpen(false);
+                  setCart([]); // Clear cart after print
+                  setCustomerName('');
+                  setCustomerId(null);
+                  setCustomerPoints(0);
+                  setRedeemedPoints(0);
+                  setUseEarnedPoints(false);
+                  setPaymentMode('Cash');
+                  setBillDiscount(0);
+                  setSelectedOffer(null);
+                  setSplitAmounts({ Cash: '', Card: '', UPI: '', Credit: '' });
+                }} className="text-gray-500 hover:text-red-500">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div 
+                className="p-6 overflow-y-auto font-mono text-[12px] bg-white text-black print-receipt"
+                style={{
+                  paddingRight: posCustomization.thermalMarginRight ? `calc(1.5rem + ${posCustomization.thermalMarginRight}mm)` : undefined,
+                  fontWeight: posCustomization.thermalFontWeight || 'normal'
+                }}
+              >
+                   <div className="text-center mb-4 border-b-2 border-dashed border-gray-300 pb-4">
+                     {posHeaderSettings?.showLogo && (
+                       <div className="flex justify-center mb-2">
+                         {companyProfile?.logo ? (
+                           <img src={companyProfile.logo} alt="Logo" className="max-h-12 object-contain" />
+                         ) : (
+                           <div className="flex items-center gap-1.5 p-1 bg-gray-50/80 rounded border border-gray-200">
+                             <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                               <mask id="blue-doc-mask-pos" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+                                 <rect width="24" height="24" fill="white" />
+                                 <rect x="10" y="7" width="12" height="14" rx="2" fill="black" />
+                                 <line x1="6" y1="7" x2="10" y2="7" stroke="black" strokeWidth="1.5" strokeLinecap="round" />
+                                 <line x1="6" y1="10" x2="10" y2="10" stroke="black" strokeWidth="1.5" strokeLinecap="round" />
+                                 <line x1="6" y1="13" x2="10" y2="13" stroke="black" strokeWidth="1.5" strokeLinecap="round" />
+                                 <line x1="6" y1="16" x2="11" y2="16" stroke="black" strokeWidth="1.5" strokeLinecap="round" />
+                               </mask>
+                               <rect x="2" y="3" width="14" height="18" rx="3" fill="#3b82f6" mask="url(#blue-doc-mask-pos)" />
+                               <rect x="10" y="7" width="12" height="14" rx="2" fill="white" stroke="#3b82f6" strokeWidth="1.5" />
+                               <line x1="13" y1="11" x2="19" y2="11" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" />
+                               <line x1="13" y1="14" x2="19" y2="14" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" />
+                               <line x1="13" y1="17" x2="19" y2="17" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" />
+                             </svg>
+                             <div className="flex flex-col text-left">
+                               <span className="text-[11px] font-bold text-gray-900 leading-none">Swayam</span>
+                               <span className="text-[10px] font-bold text-gray-900 leading-none">Bill <span className="text-[#3b82f6]">Book</span></span>
+                             </div>
+                           </div>
+                         )}
+                       </div>
+                     )}
+                     <h2 
+                       className="font-bold uppercase tracking-widest"
+                       style={{
+                         fontSize: posCustomization.headerCompanyNameFontSize ? `${posCustomization.headerCompanyNameFontSize}px` : '18px',
+                         fontWeight: posCustomization.headerCompanyNameB !== false ? 'bold' : 'normal',
+                         textDecoration: posCustomization.headerCompanyNameU ? 'underline' : 'none'
+                       }}
+                     >
+                       {companyProfile?.name || settings?.companySetting?.companyName || 'Swayam Bill Book'}
+                     </h2>
 
-               {redeemedPoints > 0 && (
-                 <div className="flex justify-between mb-1 text-gray-700">
-                   <span>Points Redeemed:</span>
-                   <span>-₹{redeemedPoints.toFixed(2)}</span>
-                 </div>
-               )}
+                     <p 
+                       className="mt-1"
+                       style={{ fontSize: posCustomization.headerCompanyAddressFontSize ? `${posCustomization.headerCompanyAddressFontSize}px` : '11px' }}
+                     >
+                       {companyProfile?.address || settings?.companySetting?.address || ''}
+                     </p>
+                     <p style={{ fontSize: posCustomization.headerContentsFontSize ? `${posCustomization.headerContentsFontSize}px` : '11px' }}>
+                       {posHeaderSettings?.labelGstin || 'GSTIN'}: {companyProfile?.companySetting?.gstin || companyProfile?.gstin || settings?.companySetting?.gstin || ''}
+                     </p>
+                     <p style={{ fontSize: posCustomization.headerContentsFontSize ? `${posCustomization.headerContentsFontSize}px` : '11px' }}>
+                       Ph: {companyProfile?.phone || settings?.companySetting?.phone || ''}
+                     </p>
+                   </div>
+                   
+                   <div className="flex justify-between mb-2 text-[11px]" style={{ fontSize: posCustomization.headerLabelsFontSize ? `${posCustomization.headerLabelsFontSize}px` : '11px' }}>
+                     <span>Bill No: {lastInvoiceNo || 'Pending'}</span>
+                     <span>Date: {new Date().toLocaleDateString()}</span>
+                   </div>
+                   <div className="flex justify-between mb-4 text-[11px]" style={{ fontSize: posCustomization.headerLabelsFontSize ? `${posCustomization.headerLabelsFontSize}px` : '11px' }}>
+                     <span>Customer: {customerName || 'Cash'}</span>
+                     <span>Mode: {paymentMode}</span>
+                   </div>
+                   
+                   <table className="w-full mb-4 border-b-2 border-dashed border-gray-300 pb-2">
+                     <thead>
+                       <tr className="border-y border-dashed border-gray-300" style={{ fontSize: posCustomization.tableHeadingsFontSize ? `${posCustomization.tableHeadingsFontSize}px` : '12px' }}>
+                         <th className="text-left py-1 w-[50%]">Item</th>
+                         <th className="text-center py-1">Qty</th>
+                         <th className="text-right py-1">Amount</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                        {cart.map((item, idx) => (
+                          <tr key={idx} style={{ fontSize: posCustomization.tableContentsFontSize ? `${posCustomization.tableContentsFontSize}px` : '12px' }}>
+                            <td className="py-1">
+                              <span className="block line-clamp-1">{item.name}</span>
+                            </td>
+                            <td className="text-center py-1">{item.qty}</td>
+                            <td className="text-right py-1">{item.total.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                     </tbody>
+                   </table>
+                   
+                   <div className="flex justify-between mb-1" style={{ fontSize: posCustomization.tableContentsFontSize ? `${posCustomization.tableContentsFontSize}px` : '12px' }}>
+                     <span>Subtotal:</span>
+                     <span>{subtotal.toFixed(2)}</span>
+                   </div>
+                   <div className="flex justify-between mb-2" style={{ fontSize: posCustomization.tableContentsFontSize ? `${posCustomization.tableContentsFontSize}px` : '12px' }}>
+                     <span>Includes Tax:</span>
+                     <span>{totalTax.toFixed(2)}</span>
+                   </div>
+                   {billDiscount > 0 && (
+                     <div className="flex justify-between mb-1 text-gray-700" style={{ fontSize: posCustomization.tableContentsFontSize ? `${posCustomization.tableContentsFontSize}px` : '12px' }}>
+                       <span>Bill Discount ({billDiscount}%):</span>
+                       <span>-₹{discountAmount.toFixed(2)}</span>
+                     </div>
+                   )}
+                   
+                   {typeof offerDiscountAmount !== 'undefined' && offerDiscountAmount > 0 && (
+                     <div className="flex justify-between mb-1 text-gray-700" style={{ fontSize: posCustomization.tableContentsFontSize ? `${posCustomization.tableContentsFontSize}px` : '12px' }}>
+                       <span>Offer ({selectedOffer?.name || 'Applied'}):</span>
+                       <span>-₹{offerDiscountAmount.toFixed(2)}</span>
+                     </div>
+                   )}
 
-               {totalEarnedPoints > 0 && (
-                 <div className="flex justify-between mb-2 text-gray-700">
-                   <span>Points Earned:</span>
-                   <span>+{totalEarnedPoints}</span>
-                 </div>
-               )}
-               <div className="flex justify-between font-bold text-[14px] border-t border-dashed border-gray-300 pt-2 mb-6">
-                 <span>GRAND TOTAL:</span>
-                 <span>Rs. {finalAmount.toFixed(2)}</span>
-               </div>
-               
-               <div className="text-center text-[10px] mt-4">
-                  <p>*** Thank You For Shopping ***</p>
-                  <p>Visit Again!</p>
+                   {redeemedPoints > 0 && (
+                     <div className="flex justify-between mb-1 text-gray-700" style={{ fontSize: posCustomization.tableContentsFontSize ? `${posCustomization.tableContentsFontSize}px` : '12px' }}>
+                       <span>Points Redeemed:</span>
+                       <span>-₹{redeemedPoints.toFixed(2)}</span>
+                     </div>
+                   )}
+
+                   {totalEarnedPoints > 0 && (
+                     <div className="flex justify-between mb-2 text-gray-700" style={{ fontSize: posCustomization.tableContentsFontSize ? `${posCustomization.tableContentsFontSize}px` : '12px' }}>
+                       <span>Points Earned:</span>
+                       <span>+{totalEarnedPoints}</span>
+                     </div>
+                   )}
+                   <div 
+                     className="flex justify-between font-bold border-t border-dashed border-gray-300 pt-2 mb-6"
+                     style={{ fontSize: posCustomization.tableTotalFontSize ? `${posCustomization.tableTotalFontSize}px` : '14px' }}
+                   >
+                     <span>GRAND TOTAL:</span>
+                     <span>Rs. {finalAmount.toFixed(2)}</span>
+                   </div>
+                   
+                   <div className="text-center mt-4" style={{ fontSize: posCustomization.footerNoteFontSize ? `${posCustomization.footerNoteFontSize}px` : '10px' }}>
+                      <p>{posFooterSettings.labelThankYouNote || '*** Thank You For Shopping ***'}</p>
+                      <p>{posFooterSettings.labelTermsAndConditions ? posFooterSettings.labelTermsAndConditions : 'Visit Again!'}</p>
+                    </div>
+
+                    {/* QR Code for payment/bill */}
+                    <div className="flex flex-col items-center mt-4 pt-3 border-t border-dashed border-gray-300 pb-8">
+                      <p className="font-bold mb-2" style={{ fontSize: posCustomization.footerHeadingsFontSize ? `${posCustomization.footerHeadingsFontSize}px` : '10px' }}>Scan to View Full Bill</p>
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${window.location.origin}/bill/${lastInvoiceNo}`)}`}
+                        alt="Bill QR Code"
+                        className="w-24 h-24"
+                      />
+                      <p className="text-[9px] mt-1 text-gray-500">Bill No: {lastInvoiceNo}</p>
+                      <p className="text-[9px] text-gray-500">₹{finalAmount.toFixed(2)}</p>
+                    </div>
                 </div>
-
-                {/* QR Code for payment/bill */}
-                <div className="flex flex-col items-center mt-4 pt-3 border-t border-dashed border-gray-300 pb-8">
-                  <p className="text-[10px] font-bold mb-2">Scan to View Full Bill</p>
-                  <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${window.location.origin}/bill/${lastInvoiceNo}`)}`}
-                    alt="Bill QR Code"
-                    className="w-24 h-24"
-                  />
-                  <p className="text-[9px] mt-1 text-gray-500">Bill No: {lastInvoiceNo}</p>
-                  <p className="text-[9px] text-gray-500">₹{finalAmount.toFixed(2)}</p>
-                </div>
-            </div>
 
             <div className="p-3 border-t border-gray-200 bg-gray-50 flex gap-2 rounded-b-[8px]">
               <button 
@@ -1294,59 +1376,69 @@ export function PosBilling() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Basic styles for print media and hiding arrows */}
-      <style dangerouslySetInnerHTML={{__html: `
-        .hide-arrows::-webkit-outer-spin-button,
-        .hide-arrows::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
-        }
-        .hide-arrows {
-          -moz-appearance: textfield;
-        }
-        @media print {
-          /* Hide external layouts like sidebar/topbar */
-          header, aside, .z-\\[38\\] {
-            display: none !important;
-          }
-          /* Un-fix the modal wrapper to flow naturally */
-          .fixed.inset-0 {
-            position: static !important;
-            background: transparent !important;
-            backdrop-filter: none !important;
-            display: block !important;
-            min-height: 0 !important;
-          }
-          /* Remove flex constraints from modal body */
-          .max-h-\\[90vh\\] {
-            max-height: none !important;
-            box-shadow: none !important;
-            width: 80mm !important;
-            margin: 0 !important;
-            display: block !important;
-          }
-          /* Hide the modal header and footer */
-          .bg-gray-100.p-3.flex.items-center.justify-between.rounded-t-\\[8px\\],
-          .p-3.border-t.border-gray-200.bg-gray-50.flex.gap-2 {
-            display: none !important;
-          }
-          /* Ensure receipt is visible and takes up space */
-          .print-receipt {
-            padding: 0 !important;
-            margin: 0 !important;
-            overflow: visible !important;
-            display: block !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-          @page {
-            margin: 0;
-          }
-        }
-      `}} />
+      {(() => {
+        const allPrint = settings?.printSettings || {};
+        const posPageSize = allPrint['POS Billing']?.pageSize || allPrint['Thermal Print']?.pageSize || allPrint['Income Transaction']?.pageSize || allPrint.pageSize || '3inch';
+        const posWidthMm = posPageSize === '2inch' ? '58mm' : posPageSize === '4inch' ? '102mm' : '80mm';
+
+        return (
+          <style dangerouslySetInnerHTML={{__html: `
+            .hide-arrows::-webkit-outer-spin-button,
+            .hide-arrows::-webkit-inner-spin-button {
+              -webkit-appearance: none;
+              margin: 0;
+            }
+            .hide-arrows {
+              -moz-appearance: textfield;
+            }
+            @media print {
+              /* Hide external layouts like sidebar/topbar */
+              header, aside, .z-\\[38\\] {
+                display: none !important;
+              }
+              /* Un-fix the modal wrapper to flow naturally */
+              .fixed.inset-0 {
+                position: static !important;
+                background: transparent !important;
+                backdrop-filter: none !important;
+                display: block !important;
+                min-height: 0 !important;
+              }
+              /* Remove flex constraints from modal body */
+              .max-h-\\[90vh\\] {
+                max-height: none !important;
+                box-shadow: none !important;
+                width: ${posWidthMm} !important;
+                margin: 0 !important;
+                display: block !important;
+              }
+              /* Hide the modal header and footer */
+              .bg-gray-100.p-3.flex.items-center.justify-between.rounded-t-\\[8px\\],
+              .p-3.border-t.border-gray-200.bg-gray-50.flex.gap-2 {
+                display: none !important;
+              }
+              /* Ensure receipt is visible and takes up space */
+              .print-receipt {
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                display: block !important;
+              }
+              .no-print {
+                display: none !important;
+              }
+              @page {
+                margin: 0;
+                size: ${posWidthMm} auto;
+              }
+            }
+          `}} />
+        );
+      })()}
 
       <ItemMasterModal 
         isOpen={isItemModalOpen}

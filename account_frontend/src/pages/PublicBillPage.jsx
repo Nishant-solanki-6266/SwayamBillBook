@@ -181,29 +181,43 @@ export function PublicBillPage() {
     roundOff: invoice.roundOff || 0
   };
 
-  const parsedItems = items.map(i => ({
-    name: (i.product?.name || i.name || 'Unknown') + (i.description ? ` - ${i.description}` : ''),
-    productCode: i.productCode || i.product?.code || i.product?.sku || i.product?.barcode || '-',
-    batchNo: i.batchNo || i.product?.batchNo || '-',
-    quantity: i.quantity || 1,
-    freeQty: i.freeQty || 0,
-    price: i.price || 0,
-    purchasePrice: i.purchasePrice || i.product?.purchasePrice || 0,
-    mrp: i.mrp || i.product?.mrp || 0,
-    pcs: i.quantity || 1,
-    secQty: i.secOpeningQty || i.secQty || '-',
-    priQty: i.primaryOpeningQty || i.priQty || i.quantity || '-',
-    unit: i.unit || i.sUnit || i.pUnit || i.product?.baseUnit || '-',
-    size: i.size || i.product?.size || '-',
-    pcsRate: i.price || 0,
-    discount: i.discount1 || i.disc1 || 0,
-    discount2: i.discount2 || i.disc2 || 0,
-    totalDiscount: (i.discount1 || i.disc1 || 0) + (i.discount2 || i.disc2 || 0),
-    hsn: i.hsnCode || i.product?.hsnCode || '-',
-    taxableValue: i.amount || 0,
-    total: i.total || i.amount || 0,
-    taxPercent: i.taxRate || i.gstRate || i.product?.tax || 0
-  }));
+  const parsedItems = items.map(i => {
+    const rawExp = i.expDate || i.expiryDate || i.expiry || i.product?.expDate || i.product?.expiryDate || i.product?.expiry || '';
+    let formattedExp = rawExp;
+    if (rawExp && typeof rawExp === 'string' && rawExp.includes('-') && !isNaN(Date.parse(rawExp))) {
+      try {
+        formattedExp = new Date(rawExp).toLocaleDateString('en-GB');
+      } catch {
+        formattedExp = rawExp;
+      }
+    }
+    return {
+      name: (i.product?.name || i.name || 'Unknown') + (i.description ? ` - ${i.description}` : ''),
+      productCode: i.productCode || i.product?.sku || i.product?.barcode || i.product?.code || '-',
+      batchNo: i.batchNo || i.product?.batchNo || '-',
+      expDate: formattedExp || '-',
+      quantity: i.quantity || 1,
+      qty: i.quantity || 1,
+      freeQty: i.freeQty || 0,
+      price: i.price || i.product?.price || 0,
+      purchasePrice: i.purchasePrice || i.product?.purchasePrice || '-',
+      mrp: i.mrp || i.product?.mrp || '-',
+      secQty: i.secOpeningQty || i.product?.secOpeningQty || i.secQty || '-',
+      priQty: i.primaryOpeningQty || i.quantity || i.priQty || '-',
+      unit: i.unit || i.product?.salesUnit || i.product?.purchaseUnit || i.product?.baseUnit || '-',
+      size: i.size || i.product?.size || '-',
+      rate: i.price || i.product?.price || 0,
+      discount1: i.discount1 || i.disc1 || 0,
+      discount2: i.discount2 || i.disc2 || 0,
+      discount: (i.discount1 || i.disc1 || 0) + (i.discount2 || i.disc2 || 0),
+      hsnCode: i.hsnCode || i.product?.hsnCode || '-',
+      hsn: i.hsnCode || i.product?.hsnCode || '-',
+      taxableValue: i.amount || 0,
+      total: i.total || i.amount || 0,
+      gstRate: i.taxRate || i.gstRate || i.product?.tax || 0,
+      taxPercent: i.taxRate || i.gstRate || i.product?.tax || 0
+    };
+  });
 
   let totalQty = 0;
   let totalTaxable = 0;
@@ -277,6 +291,7 @@ export function PublicBillPage() {
         {isThermal ? (
           <ThermalTemplate
             previewInvoice={fullPreviewInvoice}
+            companyProfile={fullPreviewInvoice.company}
             parsedItems={parsedItems}
             totalQty={totalQty}
             totalTaxable={totalTaxable}

@@ -327,9 +327,26 @@ export function StockDetails() {
   };
 
   const categories = [...new Set(rows.map(r => r.category).filter(Boolean))];
-  const warehouses = [...new Set(rows.map(r => r.warehouse).filter(Boolean))];
-  const grandTotal = filtered.reduce((s, r) => s + ((r.price || 0) * (r.stock || 0)), 0);
-  const totalStockQty = filtered.reduce((s, r) => s + (r.stock || 0), 0);
+  const calculateItemValue = (item) => {
+    const priQty = parseFloat(item.stock ?? item.qty ?? 0) || 0;
+    const secQty = parseFloat(item.secOpeningQty || 0) || 0;
+    const purPrice = parseFloat(item.purchasePrice || 0) || 0;
+    const conv = parseFloat(item.conversionRate || 1) || 1;
+    if (conv > 1 && secQty > 0) {
+      return (priQty * purPrice) + (secQty * (purPrice / conv));
+    }
+    return priQty * purPrice;
+  };
+
+  const calculateItemTaxable = (item) => {
+    const val = calculateItemValue(item);
+    const taxRate = parseFloat(item.tax || 0) || 0;
+    return taxRate > 0 ? (val / (1 + (taxRate / 100))) : val;
+  };
+
+  const grandTotal = filtered.reduce((s, r) => s + calculateItemValue(r), 0);
+  const taxableTotal = filtered.reduce((s, r) => s + calculateItemTaxable(r), 0);
+  const totalStockQty = filtered.reduce((s, r) => s + (parseFloat(r.stock ?? r.qty ?? 0) || 0), 0);
 
   return (
     <>
@@ -578,7 +595,7 @@ export function StockDetails() {
                         {(item.qty != null || item.stock != null) && (
                           <>P.QTY : <span className="font-bold text-gray-800">{item.stock ?? item.qty} {item.baseUnit?.toUpperCase() || item.purchaseUnit?.toUpperCase()}</span> <span className="text-gray-300 mx-1">|</span> </>
                         )}
-                        value : <span className="font-bold text-gray-800">{formatAmount((item.purchasePrice || 0) * (item.stock ?? item.qty ?? 0)).replace('₹', '')}</span>
+                        value : <span className="font-bold text-gray-800">{formatAmount(calculateItemValue(item)).replace('₹', '')}</span>
                       </div>
                       <div className="text-[13px] text-gray-600 flex justify-end mt-0.5">
                         S.QTY : <span className="font-bold text-gray-800 ml-1">{item.secOpeningQty || 0} {item.salesUnit?.toUpperCase() || 'PCS'}</span>
@@ -586,7 +603,7 @@ export function StockDetails() {
                       <div className="text-[12px] text-gray-500 mt-1 flex justify-end gap-3">
                         <span>HSN : <span className="font-bold text-[#007bff]">{item.hsnCode}</span> <span className="text-gray-300 mx-1">|</span></span>
                         <span>GST : <span className="font-bold text-gray-700">{item.tax || 0}</span> <span className="text-gray-300 mx-1">|</span></span>
-                        <span>TAXABLE : <span className="font-bold text-gray-700">{formatAmount(((item.purchasePrice || 0) * (item.stock ?? item.qty ?? 0)) / (1 + (item.tax || 0) / 100)).replace('₹', '')}</span></span>
+                        <span>TAXABLE : <span className="font-bold text-gray-700">{formatAmount(calculateItemTaxable(item)).replace('₹', '')}</span></span>
                       </div>
                     </div>
                   </div>
@@ -614,7 +631,7 @@ export function StockDetails() {
         {/* Fixed Footer Totals */}
         <div className="fixed bottom-0 left-[220px] right-0 bg-[#343a40] text-white grid grid-cols-3 text-center py-2.5 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
            <div className="font-bold text-[14px]">TOTAL : {filtered.length}</div>
-           <div className="font-bold text-[14px]">TAXABLE TOTAL : {formatAmount(filtered.reduce((s, r) => s + ((r.stock || 0) * (r.price || 0)) * (1 - ((parseInt(r.tax) || 0)/100)), 0)).replace('₹', '')}</div>
+           <div className="font-bold text-[14px]">TAXABLE TOTAL : {formatAmount(taxableTotal).replace('₹', '')}</div>
            <div className="font-bold text-[14px]">GRAND TOTAL : {formatAmount(grandTotal).replace('₹', '')}</div>
         </div>
 

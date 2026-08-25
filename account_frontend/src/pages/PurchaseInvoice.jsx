@@ -1776,6 +1776,7 @@ export function PurchaseInvoice() {
              disc1: rows[activeQuantityRow]?.disc1,
              taxRate: rows[activeQuantityRow]?.taxRate,
              isGstInclusive: rows[activeQuantityRow]?.isGstInclusive,
+             description: rows[activeQuantityRow]?.description,
           }}
           onSave={(calcData) => {
              const newRows = [...rows];

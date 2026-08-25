@@ -1701,6 +1701,7 @@ export function PurchaseOrder() {
              disc1: rows[activeQuantityRow]?.disc1,
              taxRate: rows[activeQuantityRow]?.gstRate,
              isGstInclusive: rows[activeQuantityRow]?.isGstInclusive,
+             description: rows[activeQuantityRow]?.description,
           }}
           onSave={(calcData) => {
              const newRows = [...rows];

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
-import { updateBarcodeSetting } from '../api/barcodeSettings';
+import { createBarcodeSetting, updateBarcodeSetting } from '../api/barcodeSettings';
 
 const ToggleSwitch = ({ label, checked, onChange }) => (
   <label className="flex items-center gap-2 cursor-pointer group py-1">
@@ -27,24 +27,24 @@ export default function PageSettingModal({ isOpen, onClose, defaultLabel = "50mm
     heightGap: '1mm'
   });
 
-  const [showBarcodeSettings, setShowBarcodeSettings] = useState(true); // By default true to show it based on user request or user can toggle
+  const [showBarcodeSettings, setShowBarcodeSettings] = useState(true);
   const [barcodeSettings, setBarcodeSettings] = useState({
     grnNumber: false,
     zeroPrice: false,
     showBrand: false,
     showMRP: true,
-    showAdditionalInfo: true,
+    showAdditionalInfo: false,
     showSalePrice: true,
-    showWholeSalePrice: true,
+    showWholeSalePrice: false,
     doubleMRP: false,
     crossMRP: false,
     showBorder: true,
-    showCategory: true,
-    showAutoQuantity: true,
+    showCategory: false,
+    showAutoQuantity: false,
     showLocation: false,
     showUnit: true,
-    showMultiLine: true,
-    showSpecialCommission: true,
+    showMultiLine: false,
+    showSpecialCommission: false,
     showHeading: true,
     hideBarcode: false,
     showDiscount: false,
@@ -53,14 +53,14 @@ export default function PageSettingModal({ isOpen, onClose, defaultLabel = "50mm
     showImei: false,
     showBatchNo: false,
     barcodeHeading: 'SWAYAM BILL',
-    headingFontSize: '',
-    productFontSize: '20px',
-    footerFontSize: '',
-    salePriceFontSize: '50px',
-    mrpFontSize: '12px',
-    discountFontSize: '10px',
-    barcodeHeight: '0',
-    barcodeWidth: '0',
+    headingFontSize: '9px',
+    productFontSize: '11px',
+    footerFontSize: '8px',
+    salePriceFontSize: '9px',
+    mrpFontSize: '9px',
+    discountFontSize: '9px',
+    barcodeHeight: '28',
+    barcodeWidth: '1.2',
     marginTop: '0mm',
     marginBottom: '0mm',
     marginLeft: '0mm',
@@ -84,38 +84,38 @@ export default function PageSettingModal({ isOpen, onClose, defaultLabel = "50mm
         heightGap: labelData.heightGap || '1mm'
       });
       setBarcodeSettings({
-        grnNumber: labelData.grnNumber || false,
-        zeroPrice: labelData.zeroPrice || false,
-        showBrand: labelData.showBrand || false,
-        showMRP: labelData.showMRP ?? true,
-        showAdditionalInfo: labelData.showAdditionalInfo || false,
-        showSalePrice: labelData.showSalePrice ?? true,
-        showWholeSalePrice: labelData.showWholeSalePrice || false,
-        doubleMRP: labelData.doubleMRP || false,
-        crossMRP: labelData.crossMRP || false,
-        showBorder: labelData.showBorder ?? true,
-        showCategory: labelData.showCategory || false,
-        showAutoQuantity: labelData.showAutoQuantity || false,
-        showLocation: labelData.showLocation || false,
-        showUnit: labelData.showUnit ?? true,
-        showMultiLine: labelData.showMultiLine || false,
-        showSpecialCommission: labelData.showSpecialCommission || false,
-        showHeading: labelData.showHeading ?? true,
-        hideBarcode: labelData.hideBarcode || false,
-        showDiscount: labelData.showDiscount || false,
-        showSize: labelData.showSize || false,
-        showColor: labelData.showColor || false,
-        showImei: labelData.showImei || false,
-        showBatchNo: labelData.showBatchNo || false,
+        grnNumber: Boolean(labelData.grnNumber),
+        zeroPrice: Boolean(labelData.zeroPrice),
+        showBrand: Boolean(labelData.showBrand),
+        showMRP: labelData.showMRP !== undefined ? Boolean(labelData.showMRP) : true,
+        showAdditionalInfo: Boolean(labelData.showAdditionalInfo),
+        showSalePrice: labelData.showSalePrice !== undefined ? Boolean(labelData.showSalePrice) : true,
+        showWholeSalePrice: Boolean(labelData.showWholeSalePrice),
+        doubleMRP: Boolean(labelData.doubleMRP),
+        crossMRP: Boolean(labelData.crossMRP),
+        showBorder: labelData.showBorder !== undefined ? Boolean(labelData.showBorder) : true,
+        showCategory: Boolean(labelData.showCategory),
+        showAutoQuantity: Boolean(labelData.showAutoQuantity),
+        showLocation: Boolean(labelData.showLocation),
+        showUnit: labelData.showUnit !== undefined ? Boolean(labelData.showUnit) : true,
+        showMultiLine: Boolean(labelData.showMultiLine),
+        showSpecialCommission: Boolean(labelData.showSpecialCommission),
+        showHeading: labelData.showHeading !== undefined ? Boolean(labelData.showHeading) : true,
+        hideBarcode: Boolean(labelData.hideBarcode),
+        showDiscount: Boolean(labelData.showDiscount),
+        showSize: Boolean(labelData.showSize),
+        showColor: Boolean(labelData.showColor),
+        showImei: Boolean(labelData.showImei),
+        showBatchNo: Boolean(labelData.showBatchNo),
         barcodeHeading: labelData.barcodeHeading || 'SWAYAM BILL',
-        headingFontSize: labelData.headingFontSize || '',
-        productFontSize: labelData.productFontSize || '20px',
-        footerFontSize: labelData.footerFontSize || '',
-        salePriceFontSize: labelData.salePriceFontSize || '50px',
-        mrpFontSize: labelData.mrpFontSize || '12px',
-        discountFontSize: labelData.discountFontSize || '10px',
-        barcodeHeight: labelData.barcodeHeight || '0',
-        barcodeWidth: labelData.barcodeWidth || '0',
+        headingFontSize: labelData.headingFontSize || '9px',
+        productFontSize: labelData.productFontSize || '11px',
+        footerFontSize: labelData.footerFontSize || '8px',
+        salePriceFontSize: labelData.salePriceFontSize || '9px',
+        mrpFontSize: labelData.mrpFontSize || '9px',
+        discountFontSize: labelData.discountFontSize || '9px',
+        barcodeHeight: labelData.barcodeHeight || '28',
+        barcodeWidth: labelData.barcodeWidth || '1.2',
         marginTop: labelData.marginTop || '0mm',
         marginBottom: labelData.marginBottom || '0mm',
         marginLeft: labelData.marginLeft || '0mm',
@@ -164,25 +164,70 @@ export default function PageSettingModal({ isOpen, onClose, defaultLabel = "50mm
       labelGap: '1mm',
       heightGap: '1mm'
     });
+    setBarcodeSettings({
+      grnNumber: false,
+      zeroPrice: false,
+      showBrand: false,
+      showMRP: true,
+      showAdditionalInfo: false,
+      showSalePrice: true,
+      showWholeSalePrice: false,
+      doubleMRP: false,
+      crossMRP: false,
+      showBorder: true,
+      showCategory: false,
+      showAutoQuantity: false,
+      showLocation: false,
+      showUnit: true,
+      showMultiLine: false,
+      showSpecialCommission: false,
+      showHeading: true,
+      hideBarcode: false,
+      showDiscount: false,
+      showSize: false,
+      showColor: false,
+      showImei: false,
+      showBatchNo: false,
+      barcodeHeading: 'SWAYAM BILL',
+      headingFontSize: '9px',
+      productFontSize: '11px',
+      footerFontSize: '8px',
+      salePriceFontSize: '9px',
+      mrpFontSize: '9px',
+      discountFontSize: '9px',
+      barcodeHeight: '28',
+      barcodeWidth: '1.2',
+      marginTop: '0mm',
+      marginBottom: '0mm',
+      marginLeft: '0mm',
+      marginRight: '0mm',
+      registerOfficeAddress: '',
+      terms: '',
+      barcodeFormat: 'Format 4'
+    });
   };
 
   const handleUpdatePageSetup = async () => {
-    if (labelData && labelData.id) {
-      const payload = {
-        ...formData,
-        ...barcodeSettings
-      };
-      try {
-        const response = await updateBarcodeSetting(labelData.id, payload);
-        if (response || response?.success) {
-          if (onSave) onSave();
-          onClose(); // Close on success
-        }
-      } catch (error) {
-        console.error("Error updating page setup:", error);
+    const payload = {
+      ...formData,
+      ...barcodeSettings,
+      name: formData.pageType || defaultLabel
+    };
+
+    try {
+      let response;
+      if (labelData && labelData.id) {
+        response = await updateBarcodeSetting(labelData.id, payload);
+      } else {
+        response = await createBarcodeSetting(payload);
       }
-    } else {
-      // If no ID, perhaps just close
+
+      const updatedTemplate = response?.data || { ...(labelData || {}), ...payload };
+      if (onSave) onSave(updatedTemplate);
+      onClose();
+    } catch (error) {
+      console.error("Error updating page setup:", error);
+      if (onSave) onSave({ ...(labelData || {}), ...payload });
       onClose();
     }
   };

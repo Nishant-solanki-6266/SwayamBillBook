@@ -16,13 +16,47 @@ export function TextileQuantityCalculatorModal({ isOpen, onClose, onSave, initia
   const [isGstInclusive, setIsGstInclusive] = useState(false);
   
   const [isTotalMeterManual, setIsTotalMeterManual] = useState(false);
+  const [rollEntries, setRollEntries] = useState([]);
+
+  const parseDescription = (desc) => {
+    if (!desc) return [];
+    // Replace + with commas, then split by commas
+    const parts = desc.replace(/\+/g, ',').split(',');
+    const entries = [];
+    for (let part of parts) {
+      part = part.trim();
+      if (!part) continue;
+      // Match pattern: "number x number", "number * number", "number X number"
+      const match = part.match(/^([\d.]+)\s*[xX*]\s*([\d.]+)$/);
+      if (match) {
+        const rq = parseFloat(match[1]);
+        const mpr = parseFloat(match[2]);
+        if (!isNaN(rq) && !isNaN(mpr)) {
+          entries.push({ rollQty: rq, meterPerRoll: mpr });
+        }
+      }
+    }
+    return entries;
+  };
 
   useEffect(() => {
     if (isOpen) {
-      // Initialize with data from the row
-      setRollQty(initialData?.rollQty || '');
-      setMeterPerRoll(initialData?.meterPerRoll || '');
+      // 1. Try to parse from description first
+      let parsed = parseDescription(initialData?.description);
       
+      // 2. If no entries found in description, fallback to rollQty & meterPerRoll
+      if (parsed.length === 0) {
+        const r = parseFloat(initialData?.rollQty) || 0;
+        const m = parseFloat(initialData?.meterPerRoll) || 0;
+        if (r > 0 && m > 0) {
+          parsed = [{ rollQty: r, meterPerRoll: m }];
+        }
+      }
+
+      setRollEntries(parsed);
+      setRollQty('');
+      setMeterPerRoll('');
+
       if (initialData?.qty) {
          setTotalMeterManual(initialData.qty);
       } else {
@@ -54,15 +88,30 @@ export function TextileQuantityCalculatorModal({ isOpen, onClose, onSave, initia
 
   if (!isOpen) return null;
 
+  const handleAddRoll = () => {
+    const rq = parseFloat(rollQty);
+    const mpr = parseFloat(meterPerRoll);
+    if (!isNaN(rq) && !isNaN(mpr) && rq > 0 && mpr > 0) {
+      setRollEntries(prev => [...prev, { rollQty: rq, meterPerRoll: mpr }]);
+      setRollQty('');
+      setMeterPerRoll('');
+      setTimeout(() => {
+        if (firstInputRef.current) {
+          firstInputRef.current.focus();
+        }
+      }, 50);
+    }
+  };
+
   // Auto Calculations
-  const rQty = parseFloat(rollQty) || 0;
-  const mPR = parseFloat(meterPerRoll) || 0;
-  
+  const entriesTotalMeter = rollEntries.reduce((sum, entry) => sum + (entry.rollQty * entry.meterPerRoll), 0);
+  const currentInputMeter = (parseFloat(rollQty) || 0) * (parseFloat(meterPerRoll) || 0);
+
   let computedTotalMeter = 0;
   if (isTotalMeterManual && totalMeterManual !== '') {
     computedTotalMeter = parseFloat(totalMeterManual) || 0;
   } else {
-    computedTotalMeter = rQty * mPR;
+    computedTotalMeter = entriesTotalMeter + currentInputMeter;
   }
 
   const rate = parseFloat(ratePerMeter) || 0;
@@ -88,6 +137,27 @@ export function TextileQuantityCalculatorModal({ isOpen, onClose, onSave, initia
   const handleKeyDown = (e, nextId) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      
+      // Special behavior for Meter / Roll:
+      if (e.target.id === 'calc_meterPerRoll') {
+        const rq = parseFloat(rollQty);
+        const mpr = parseFloat(meterPerRoll);
+        if (!isNaN(rq) && !isNaN(mpr) && rq > 0 && mpr > 0) {
+          handleAddRoll();
+          return;
+        }
+      }
+
+      // Special behavior for Roll Qty: jump to rate if empty and we have entries
+      if (e.target.id === 'calc_rollQty' && rollQty === '' && rollEntries.length > 0) {
+        const nextInput = document.getElementById('calc_rate');
+        if (nextInput) {
+          nextInput.focus();
+          if (nextInput.select) nextInput.select();
+        }
+        return;
+      }
+      
       if (nextId === 'save') {
         handleSave();
       } else {
@@ -106,9 +176,23 @@ export function TextileQuantityCalculatorModal({ isOpen, onClose, onSave, initia
       return;
     }
 
+    const finalEntries = [...rollEntries];
+    const rq = parseFloat(rollQty) || 0;
+    const mpr = parseFloat(meterPerRoll) || 0;
+    if (rq > 0 && mpr > 0) {
+      finalEntries.push({ rollQty: rq, meterPerRoll: mpr });
+    }
+
+    const finalDescription = finalEntries
+      .map(entry => `${entry.rollQty} X ${entry.meterPerRoll}`)
+      .join(' + ');
+
+    const totalRollQty = finalEntries.reduce((sum, entry) => sum + entry.rollQty, 0);
+    const avgMeterPerRoll = totalRollQty > 0 ? (computedTotalMeter / totalRollQty) : 0;
+
     onSave({
-      rollQty: rQty,
-      meterPerRoll: mPR,
+      rollQty: totalRollQty,
+      meterPerRoll: avgMeterPerRoll,
       qty: computedTotalMeter, // Total Meter becomes the quantity
       price: isGstInclusive ? (rate / (1 + (gstRate/100))) : rate,
       disc1: discPercent,
@@ -117,7 +201,7 @@ export function TextileQuantityCalculatorModal({ isOpen, onClose, onSave, initia
       d1Amt: discountAmount,
       gstAmount: gstAmount,
       isGstInclusive: isGstInclusive,
-      description: rQty > 0 ? `${rQty} X ${mPR}` : ''
+      description: finalDescription || (computedTotalMeter > 0 ? `${computedTotalMeter} m` : '')
     });
   };
 
@@ -173,17 +257,27 @@ export function TextileQuantityCalculatorModal({ isOpen, onClose, onSave, initia
 
                 <div className="flex items-center justify-between gap-3">
                   <label className="text-[13px] font-bold text-gray-700 w-[100px]">Meter / Roll</label>
-                  <input 
-                    id="calc_meterPerRoll"
-                    type="number" 
-                    min="0"
-                    step="any"
-                    value={meterPerRoll} 
-                    onChange={(e) => setMeterPerRoll(e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, 'calc_rate')}
-                    className="flex-1 bg-white border border-gray-300 rounded-[3px] px-3 py-1.5 text-[14px] font-semibold text-gray-800 outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] text-right"
-                    placeholder="0.00"
-                  />
+                  <div className="flex-1 flex gap-1">
+                    <input 
+                      id="calc_meterPerRoll"
+                      type="number" 
+                      min="0"
+                      step="any"
+                      value={meterPerRoll} 
+                      onChange={(e) => setMeterPerRoll(e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(e, 'calc_rate')}
+                      className="w-full bg-white border border-gray-300 rounded-[3px] px-3 py-1.5 text-[14px] font-semibold text-gray-800 outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] text-right"
+                      placeholder="0.00"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddRoll}
+                      className="px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[3px] font-bold text-[16px] transition-colors flex items-center justify-center shadow-sm"
+                      title="Add to History"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between gap-3 pt-2 border-t border-gray-200">
@@ -304,10 +398,59 @@ export function TextileQuantityCalculatorModal({ isOpen, onClose, onSave, initia
                 </div>
              </div>
              
-             <div className="flex flex-col justify-end">
-                <div className="bg-[#e8f5e9] border border-[#c3e6cb] rounded-[4px] p-4 flex flex-col items-center justify-center">
-                   <span className="text-[12px] font-bold text-[#155724] uppercase tracking-wider mb-1">Net Amount</span>
-                   <span className="text-[28px] font-bold text-[#155724] leading-none">
+             <div className="flex flex-col justify-between h-full min-h-[160px]">
+                {/* Roll Details History */}
+                <div className="bg-white border border-gray-200 rounded-[4px] p-2.5 shadow-sm flex-1 flex flex-col overflow-hidden mb-3">
+                   <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 border-b border-gray-100 pb-1 flex justify-between items-center">
+                      <span>Roll History</span>
+                      {rollEntries.length > 0 && (
+                         <button
+                            type="button"
+                            onClick={() => setRollEntries([])}
+                            className="text-red-500 hover:text-red-700 text-[10px] font-bold uppercase tracking-wider"
+                         >
+                            Clear All
+                         </button>
+                      )}
+                   </div>
+                   <div className="flex-1 overflow-y-auto pr-1 space-y-1">
+                      {rollEntries.length === 0 && !rollQty && !meterPerRoll ? (
+                         <div className="text-gray-400 text-[11px] italic my-auto text-center py-2">
+                            No rolls added yet
+                         </div>
+                      ) : (
+                         <>
+                            {rollEntries.map((entry, index) => (
+                               <div key={index} className="flex justify-between items-center bg-gray-50 px-2 py-0.5 rounded border border-gray-100 text-[12px] font-semibold text-gray-700">
+                                  <span>{entry.rollQty} × {entry.meterPerRoll}</span>
+                                  <div className="flex items-center gap-1.5">
+                                     <span className="text-gray-500">{(entry.rollQty * entry.meterPerRoll).toFixed(2)} m</span>
+                                     <button 
+                                        type="button"
+                                        onClick={() => {
+                                           setRollEntries(prev => prev.filter((_, i) => i !== index));
+                                        }}
+                                        className="text-red-500 hover:text-red-700 font-bold text-[14px] leading-none px-1"
+                                     >
+                                        &times;
+                                     </button>
+                                  </div>
+                                </div>
+                            ))}
+                            {rollQty && meterPerRoll && (
+                               <div className="flex justify-between items-center bg-indigo-50/50 px-2 py-0.5 rounded border border-indigo-100/50 border-dashed text-[12px] font-semibold text-indigo-600">
+                                  <span>{rollQty} × {meterPerRoll} (Draft)</span>
+                                  <span>{(parseFloat(rollQty) * parseFloat(meterPerRoll) || 0).toFixed(2)} m</span>
+                               </div>
+                            )}
+                         </>
+                      )}
+                   </div>
+                </div>
+
+                <div className="bg-[#e8f5e9] border border-[#c3e6cb] rounded-[4px] p-3 flex flex-col items-center justify-center">
+                   <span className="text-[12px] font-bold text-[#155724] uppercase tracking-wider mb-0.5">Net Amount</span>
+                   <span className="text-[26px] font-bold text-[#155724] leading-none">
                       {formatAmount(netAmount)}
                    </span>
                 </div>
