@@ -800,6 +800,31 @@ export function PurchaseOrder() {
     }
   };
 
+  useEffect(() => {
+    if (!showBarcodePrintModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        setShowBarcodePrintModal(false);
+        const itemsToPrint = rows.filter(r => r.productId && r.qty > 0).map(r => ({
+          productId: r.productId,
+          name: r.productName || r.name || products.find(p => p.id === parseInt(r.productId))?.name,
+          barcode: r.barcode || r.productCode || products.find(p => p.id === parseInt(r.productId))?.barcode || '',
+          quantity: r.qty,
+          salePrice: r.salePrice || r.price,
+          mrp: r.mrp || r.price
+        }));
+        navigate('/admin/barcode', { state: { invoiceItems: itemsToPrint } });
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowBarcodePrintModal(false);
+        window.location.href = location.pathname;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showBarcodePrintModal, rows, products, location.pathname]);
+
   return (
     <>
     <div className="bg-[#f4f6f9] min-h-[calc(100vh-45px)] flex flex-col relative pb-12">
@@ -1736,6 +1761,7 @@ export function PurchaseOrder() {
             </h2>
             <div className="flex justify-center gap-3">
               <button 
+                autoFocus
                 onClick={() => {
                   const itemsToPrint = rows.filter(r => r.productId && r.qty > 0).map(r => ({
                     productId: r.productId,
@@ -1747,7 +1773,7 @@ export function PurchaseOrder() {
                   }));
                   navigate('/admin/barcode', { state: { invoiceItems: itemsToPrint } });
                 }}
-                className="bg-[#3085d6] hover:bg-[#2874ba] text-white px-5 py-2.5 rounded-[4px] text-[15px] font-medium transition-colors"
+                className="bg-[#3085d6] hover:bg-[#2874ba] text-white px-5 py-2.5 rounded-[4px] text-[15px] font-medium transition-colors focus:ring-2 focus:ring-[#3085d6] focus:ring-offset-2"
               >
                 Yes, Print Barcode!
               </button>

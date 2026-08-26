@@ -34,12 +34,11 @@ export function ResetDatabaseModal({ isOpen, onClose }) {
       });
 
       if (res.data.success) {
-        setSuccess('Database reset successfully.');
+        setSuccess('Database reset successfully! Redirecting to Dashboard...');
         setTimeout(() => {
           handleClose();
-          // Optionally reload the page to clear all frontend state
-          window.location.reload();
-        }, 1500);
+          window.location.href = '/dashboard';
+        }, 1200);
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reset database');

@@ -167,7 +167,28 @@ export function SalesInvoice() {
        loadHeldInvoice(unholdId);
     }
   }, [searchParams]);
+
   const [isPaymentStatusModalOpen, setIsPaymentStatusModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!showBarcodePrintModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        setShowBarcodePrintModal(false);
+        if (savedInvoiceNo) {
+          window.open(`/bill/${savedInvoiceNo}`, '_blank');
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowBarcodePrintModal(false);
+        window.location.href = location.pathname;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showBarcodePrintModal, savedInvoiceNo, location.pathname]);
+
   const dateInputRef = useRef(null);
 
   const formatDisplayDate = (dateString) => {
@@ -2273,13 +2294,14 @@ export function SalesInvoice() {
             </h2>
             <div className="flex justify-center gap-3">
               <button 
+                autoFocus
                 onClick={() => {
                   setShowBarcodePrintModal(false);
                   if (savedInvoiceNo) {
                     window.open(`/bill/${savedInvoiceNo}`, '_blank');
                   }
                 }}
-                className="bg-[#3085d6] hover:bg-[#2874ba] text-white px-5 py-2.5 rounded-[4px] text-[15px] font-medium transition-colors"
+                className="bg-[#3085d6] hover:bg-[#2874ba] text-white px-5 py-2.5 rounded-[4px] text-[15px] font-medium transition-colors focus:ring-2 focus:ring-[#3085d6] focus:ring-offset-2"
               >
                 Yes, Print it!
               </button>

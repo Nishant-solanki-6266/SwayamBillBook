@@ -39,6 +39,20 @@ export function PaymentStatusModal({ isOpen, onClose, totalAmount = 0, dueAmount
   }, []);
 
   useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter' && !openDropdownId && !isBankMasterOpen) {
+        e.preventDefault();
+        handleSavePayments();
+      } else if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, openDropdownId, isBankMasterOpen, paymentRows, salesPerson, commission]);
+
+  useEffect(() => {
     if (!salesPerson || !salesPerson.trim()) {
       setCommission('0.00');
       return;
