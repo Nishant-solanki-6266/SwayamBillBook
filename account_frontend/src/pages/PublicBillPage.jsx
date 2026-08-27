@@ -16,7 +16,17 @@ export function PublicBillPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const billRes = await apiClient.get(`/public/bill/${invoiceNo}`);
+        let userCompanyId = null;
+        try {
+          const userStr = localStorage.getItem('user');
+          if (userStr) {
+            const userObj = JSON.parse(userStr);
+            if (userObj && userObj.companyId) userCompanyId = userObj.companyId;
+          }
+        } catch (e) {}
+
+        const queryParam = userCompanyId ? `?companyId=${userCompanyId}` : '';
+        const billRes = await apiClient.get(`/public/bill/${invoiceNo}${queryParam}`);
         if (billRes.data.success) {
           setInvoice(billRes.data.data);
         } else {

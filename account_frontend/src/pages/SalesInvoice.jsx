@@ -66,6 +66,7 @@ export function SalesInvoice() {
   const [isQuantityCalcOpen, setIsQuantityCalcOpen] = useState(false);
   const [activeQuantityRow, setActiveQuantityRow] = useState(null);
   const [showBarcodePrintModal, setShowBarcodePrintModal] = useState(false);
+  const [savedInvoiceId, setSavedInvoiceId] = useState(null);
   const [savedInvoiceNo, setSavedInvoiceNo] = useState("");
   const [invoiceNoPreview, setInvoiceNoPreview] = useState("");
 
@@ -176,8 +177,9 @@ export function SalesInvoice() {
       if (e.key === 'Enter') {
         e.preventDefault();
         setShowBarcodePrintModal(false);
-        if (savedInvoiceNo) {
-          window.open(`/bill/${savedInvoiceNo}`, '_blank');
+        const billId = savedInvoiceId || savedInvoiceNo;
+        if (billId) {
+          window.open(`/bill/${billId}`, '_blank');
         }
       } else if (e.key === 'Escape') {
         e.preventDefault();
@@ -187,7 +189,7 @@ export function SalesInvoice() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showBarcodePrintModal, savedInvoiceNo, location.pathname]);
+  }, [showBarcodePrintModal, savedInvoiceId, savedInvoiceNo, location.pathname]);
 
   const dateInputRef = useRef(null);
 
@@ -970,8 +972,9 @@ export function SalesInvoice() {
       else if (isCustomerChallan) type = 'challan';
 
       const response = await createTransaction(type, payload);
-      if (response.data && response.data.invoiceNo) {
-        setSavedInvoiceNo(response.data.invoiceNo);
+      if (response.data) {
+        if (response.data.id) setSavedInvoiceId(response.data.id);
+        if (response.data.invoiceNo) setSavedInvoiceNo(response.data.invoiceNo);
       }
       
       if (activeHoldId) {
@@ -1950,8 +1953,9 @@ export function SalesInvoice() {
           <button 
             type="button"
             onClick={() => {
-              if (searchInvoiceNo) {
-                window.open(`/bill/${searchInvoiceNo}`, '_blank');
+              const billIdentifier = savedInvoiceId || editInvoiceId || searchInvoiceNo || savedInvoiceNo;
+              if (billIdentifier) {
+                window.open(`/bill/${billIdentifier}`, '_blank');
               } else {
                 alert('Please save the invoice first to print it.');
               }
@@ -2297,8 +2301,9 @@ export function SalesInvoice() {
                 autoFocus
                 onClick={() => {
                   setShowBarcodePrintModal(false);
-                  if (savedInvoiceNo) {
-                    window.open(`/bill/${savedInvoiceNo}`, '_blank');
+                  const billIdentifier = savedInvoiceId || savedInvoiceNo;
+                  if (billIdentifier) {
+                    window.open(`/bill/${billIdentifier}`, '_blank');
                   }
                 }}
                 className="bg-[#3085d6] hover:bg-[#2874ba] text-white px-5 py-2.5 rounded-[4px] text-[15px] font-medium transition-colors focus:ring-2 focus:ring-[#3085d6] focus:ring-offset-2"
