@@ -1767,14 +1767,35 @@ export function SalesInvoice() {
                        <input 
                          type="number" 
                          value={manualDiscPercent !== "" ? manualDiscPercent : effectiveDiscPercent} 
-                         onChange={(e) => setManualDiscPercent(e.target.value)} 
+                         onChange={(e) => {
+                           const val = e.target.value;
+                           setManualDiscPercent(val);
+                           if (val !== "") {
+                             setManualDiscAmount((baseAmount * (Number(val) / 100)).toFixed(2));
+                           } else {
+                             setManualDiscAmount("");
+                           }
+                         }}
                          className="w-full min-w-0 border border-gray-300 rounded-[3px] py-1 px-2 text-[13px] outline-none bg-white text-right text-blue-700 font-bold" 
                        />
                      </div>
                    </div>
                    <div className="flex-1 relative mt-[18px]">
-                     <span className="absolute -top-[18px] left-0 text-[11px] font-bold text-gray-800">Dis. Amount</span>
-                     <input type="number" value={manualDiscAmount !== "" ? manualDiscAmount : totalRowDiscount.toFixed(2)} onChange={(e) => setManualDiscAmount(e.target.value)} className="w-full min-w-0 border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none bg-white text-right text-blue-700 font-bold" />
+                     <span className="absolute -top-[18px] left-0 text-[11px] font-bold text-gray-800">Dis. Amt</span>
+                     <input 
+                       type="number" 
+                       value={manualDiscAmount !== "" ? manualDiscAmount : totalRowDiscount.toFixed(2)} 
+                       onChange={(e) => {
+                         const val = e.target.value;
+                         setManualDiscAmount(val);
+                         if (val !== "" && baseAmount > 0) {
+                           setManualDiscPercent(((Number(val) / baseAmount) * 100).toFixed(2));
+                         } else {
+                           setManualDiscPercent("");
+                         }
+                       }}
+                       className="w-full min-w-0 border border-gray-300 rounded-[3px] px-2 py-1 text-[13px] outline-none bg-white text-right text-blue-700 font-bold" 
+                     />
                    </div>
                  </div>
                </div>
